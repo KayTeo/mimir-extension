@@ -1,0 +1,12 @@
+{
+  "name": "mimir-extension",
+  "version": "1.0.0",
+  "description": "A Chrome extension with Supabase authentication",
+  "main": "popup.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3"
+  }
+} 

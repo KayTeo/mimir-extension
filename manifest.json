@@ -12,5 +12,22 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": []
+  "permissions": [
+    "storage",
+    "identity"
+  ],
+  "oauth2": {
+    "client_id": "456411952592-u5ia1651j66acah5hu78ckvrgv22k0t1.apps.googleusercontent.com",
+    "scopes": [
+      "openid",
+      "email",
+      "profile"
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://rinvhgmedtwsjwomcgwf.supabase.co https://*.googleapis.com"
+  },
+  "host_permissions": [
+    "https://*.googleapis.com/*"
+  ]
 } 
