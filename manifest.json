@@ -3,6 +3,7 @@
   "name": "Mimir Extension",
   "version": "1.0.0",
   "description": "A minimal Chrome extension starter.",
+  "key": "jiimggnjbdbeehkcnifcpahjbjeimjma",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

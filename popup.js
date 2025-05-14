@@ -1,4 +1,4 @@
-import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './auth.js';
+ import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './auth.js';
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -132,7 +132,7 @@ googleSignInBtn.addEventListener('click', async (e) => {
 
 // Check initial auth state
 async function checkAuthState() {
-  try {
+/*   try {
     const { user, error } = await getCurrentUser();
     if (error) throw error;
     if (user) {
@@ -143,7 +143,7 @@ async function checkAuthState() {
   } catch (error) {
     console.error('Auth state check error:', error);
     showLoginForm();
-  }
+  } */
 }
 
 // Initialize

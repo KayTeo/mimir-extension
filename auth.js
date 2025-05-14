@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+// import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function signInWithEmail(email, password) {
-  try {
+/*   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -15,11 +15,11 @@ export async function signInWithEmail(email, password) {
   } catch (error) {
     console.error('Email sign in error:', error);
     return { data: null, error };
-  }
+  } */
 }
 
 export async function signUpWithEmail(email, password) {
-  try {
+/*   try {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -30,51 +30,50 @@ export async function signUpWithEmail(email, password) {
   } catch (error) {
     console.error('Email sign up error:', error);
     return { data: null, error };
-  }
+  } */
 }
 
 export async function signOut() {
-  try {
+/*   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     return { error: null };
   } catch (error) {
     console.error('Sign out error:', error);
     return { error };
-  }
+  } */
 }
 
 export async function getCurrentUser() {
-  try {
+/*   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return { user, error: null };
   } catch (error) {
     console.error('Get current user error:', error);
     return { user: null, error };
-  }
+  } */
 }
 
 export async function resetPassword(email) {
-  try {
+/*   try {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
     return { data: null, error };
-  }
+  } */
 }
 
 export async function signInWithGoogle() {
   try {
     const manifest = chrome.runtime.getManifest();
-    const redirectURL = `https://${chrome.runtime.id}.chromiumapp.org/`;
     
     const authURL = new URL('https://accounts.google.com/o/oauth2/auth');
     authURL.searchParams.set('client_id', manifest.oauth2.client_id);
     authURL.searchParams.set('response_type', 'id_token');
     authURL.searchParams.set('access_type', 'offline');
-    authURL.searchParams.set('redirect_uri', redirectURL);
+    authURL.searchParams.set('redirect_uri', `https://${chrome.runtime.id}.chromiumapp.org/`);
     authURL.searchParams.set('scope', manifest.oauth2.scopes.join(' '));
 
     return new Promise((resolve, reject) => {
