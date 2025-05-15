@@ -1,10 +1,10 @@
-// import { createClient } from '@supabase/supabase-js';
+ import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-// const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function signInWithEmail(email, password) {
-/*   try {
+  try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -15,11 +15,11 @@ export async function signInWithEmail(email, password) {
   } catch (error) {
     console.error('Email sign in error:', error);
     return { data: null, error };
-  } */
+  } 
 }
 
 export async function signUpWithEmail(email, password) {
-/*   try {
+   try {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -30,39 +30,39 @@ export async function signUpWithEmail(email, password) {
   } catch (error) {
     console.error('Email sign up error:', error);
     return { data: null, error };
-  } */
+  } 
 }
 
 export async function signOut() {
-/*   try {
+   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     return { error: null };
   } catch (error) {
     console.error('Sign out error:', error);
     return { error };
-  } */
+  } 
 }
 
 export async function getCurrentUser() {
-/*   try {
+   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return { user, error: null };
   } catch (error) {
     console.error('Get current user error:', error);
     return { user: null, error };
-  } */
+  } 
 }
 
 export async function resetPassword(email) {
-/*   try {
+   try {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
     return { data: null, error };
-  } */
+  } 
 }
 
 export async function signInWithGoogle() {
@@ -96,8 +96,6 @@ export async function signInWithGoogle() {
             const hashFragment = url.hash.substring(1);
             const params = new URLSearchParams(hashFragment);
             const idToken = params.get('id_token');
-            console.log('Hash fragment:', hashFragment);
-            console.log('ID Token:', idToken);
             if (!idToken) {
               throw new Error('No ID token received');
             }

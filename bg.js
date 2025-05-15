@@ -1,13 +1,12 @@
 // add tab listener when background script starts
+/*
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url?.startsWith(chrome.identity.getRedirectURL())) {
     finishUserOAuth(changeInfo.url);
   }
 });
 
-/**
- * Method used to finish OAuth callback for a user authentication.
- */
+
 async function finishUserOAuth(url: string) {
   try {
     console.log(`handling user OAuth callback ...`);
@@ -40,9 +39,7 @@ async function finishUserOAuth(url: string) {
   }
 }
 
-/**
- * Helper method used to parse the hash of a redirect URL.
- */
+
 function parseUrlHash(url: string) {
   const hashParts = new URL(url).hash.slice(1).split('&');
   const hashMap = new Map(
@@ -54,3 +51,4 @@ function parseUrlHash(url: string) {
 
   return hashMap;
 }
+*/
