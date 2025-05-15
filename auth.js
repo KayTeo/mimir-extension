@@ -73,9 +73,10 @@ export async function signInWithGoogle() {
     authURL.searchParams.set('client_id', manifest.oauth2.client_id);
     authURL.searchParams.set('response_type', 'id_token');
     authURL.searchParams.set('access_type', 'offline');
-    authURL.searchParams.set('redirect_uri', `https://${chrome.runtime.id}.chromiumapp.org/`);
+    authURL.searchParams.set('redirect_uri', `https://dknmebcamfpnjhijpomlgdlcipchlbka.chromiumapp.org`);
     authURL.searchParams.set('scope', manifest.oauth2.scopes.join(' '));
-
+    console.log(chrome.runtime.id);
+    console.log(`https://${chrome.runtime.id}.chromiumapp.org/`);
     return new Promise((resolve, reject) => {
       chrome.identity.launchWebAuthFlow(
         {
@@ -91,9 +92,12 @@ export async function signInWithGoogle() {
 
           try {
             const url = new URL(redirectedTo);
-            const params = new URLSearchParams(url.hash);
+            // Extract the hash fragment and remove the leading #
+            const hashFragment = url.hash.substring(1);
+            const params = new URLSearchParams(hashFragment);
             const idToken = params.get('id_token');
-
+            console.log('Hash fragment:', hashFragment);
+            console.log('ID Token:', idToken);
             if (!idToken) {
               throw new Error('No ID token received');
             }
