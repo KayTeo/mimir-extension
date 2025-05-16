@@ -15,8 +15,29 @@
   },
   "permissions": [
     "storage",
-    "identity"
+    "identity",
+    "contextMenus",
+    "commands"
   ],
+  "commands": {
+    "action1": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Trigger action 1"
+    },
+    "action2": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
+      },
+      "description": "Trigger action 2"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
   "oauth2": {
     "client_id": "456411952592-u5ia1651j66acah5hu78ckvrgv22k0t1.apps.googleusercontent.com",
     "scopes": [

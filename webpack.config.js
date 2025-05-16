@@ -5,7 +5,7 @@ module.exports = {
   mode: 'production',
   entry: {
     popup: './popup.js',
-    background: './bg.js'
+    background: './background.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -31,7 +31,8 @@ module.exports = {
       patterns: [
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'popup.html', to: 'popup.html' },
-        { from: 'icons', to: 'icons' }
+        { from: 'icons', to: 'icons' },
+        { from: 'config.js', to: 'config.js' }
       ]
     })
   ]
