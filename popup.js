@@ -1,4 +1,4 @@
- import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './background.js';
+import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './background.js';
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -11,6 +11,7 @@ const signupPassword = document.getElementById('signupPassword');
 const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 const googleSignInBtn = document.getElementById('googleSignIn');
+const openSidePanelBtn = document.getElementById('openSidePanelBtn');
 
 // Show/hide forms
 function showLoginForm() {
@@ -130,6 +131,15 @@ googleSignInBtn.addEventListener('click', async (e) => {
   }
 });
 
+// Add side panel button handler
+openSidePanelBtn.addEventListener('click', async () => {
+  try {
+    await chrome.sidePanel.open();
+  } catch (error) {
+    console.error('Failed to open side panel:', error);
+  }
+});
+
 // Check initial auth state
 async function checkAuthState() {
    try {
@@ -145,7 +155,6 @@ async function checkAuthState() {
     showLoginForm();
   } 
 }
-
 
 // Initialize
 document.addEventListener('DOMContentLoaded', checkAuthState); 
