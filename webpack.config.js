@@ -35,5 +35,11 @@ module.exports = {
         { from: 'config.js', to: 'config.js' }
       ]
     })
-  ]
+  ],
+  optimization: {
+    splitChunks: false
+  },
+  experiments: {
+    topLevelAwait: true
+  }
 }; 

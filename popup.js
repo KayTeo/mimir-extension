@@ -1,4 +1,4 @@
- import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './auth.js';
+ import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './background.js';
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -145,6 +145,7 @@ async function checkAuthState() {
     showLoginForm();
   } 
 }
+
 
 // Initialize
 document.addEventListener('DOMContentLoaded', checkAuthState); 

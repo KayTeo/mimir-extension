@@ -17,7 +17,8 @@
     "storage",
     "identity",
     "contextMenus",
-    "commands"
+    "commands",
+    "sidePanel"
   ],
   "commands": {
     "action1": {
@@ -51,5 +52,8 @@
   },
   "host_permissions": [
     "https://*.googleapis.com/*"
-  ]
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  }
 } 
