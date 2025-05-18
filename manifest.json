@@ -11,7 +11,8 @@
       "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
-    }
+    },
+    "default_title": "Click to open panel"
   },
   "permissions": [
     "storage",
@@ -39,6 +40,9 @@
   "background": {
     "service_worker": "background.js"
   },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "oauth2": {
     "client_id": "456411952592-u5ia1651j66acah5hu78ckvrgv22k0t1.apps.googleusercontent.com",
     "scopes": [
@@ -52,8 +56,5 @@
   },
   "host_permissions": [
     "https://*.googleapis.com/*"
-  ],
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  }
+  ]
 } 

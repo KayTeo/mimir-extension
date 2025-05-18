@@ -135,6 +135,28 @@
     .hidden {
       display: none;
     }
+
+    .user-info {
+      margin-bottom: 16px;
+      padding: 12px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    button.primary {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    button.primary:hover {
+      background-color: #1557b0;
+    }
   </style>
 </head>
 <body>
@@ -176,9 +198,13 @@
 
     <!-- Logged In State -->
     <div id="loggedInState" class="hidden">
-      <p>Welcome, <span id="userEmail"></span>!</p>
-      <button id="openSidePanelBtn" class="secondary">Open Side Panel</button>
-      <button id="logoutBtn" class="secondary">Sign Out</button>
+      <div class="user-info">
+        <p>Welcome, <span id="userEmail"></span>!</p>
+      </div>
+      <div class="actions">
+        <button id="openSidePanelBtn" class="primary">Open Side Panel</button>
+        <button id="logoutBtn" class="secondary">Sign Out</button>
+      </div>
     </div>
   </div>
 

@@ -131,29 +131,65 @@ googleSignInBtn.addEventListener('click', async (e) => {
   }
 });
 
-// Add side panel button handler
+// Add this new event listener for the side panel button
 openSidePanelBtn.addEventListener('click', async () => {
   try {
-    await chrome.sidePanel.open();
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      // Get current window
+      const window = await chrome.windows.getCurrent();
+      
+      // Check if we're opening or closing
+      const isOpening = openSidePanelBtn.textContent === 'Open Side Panel';
+      
+      if (isOpening) {
+        // Set the options first
+        await chrome.sidePanel.setOptions({
+          path: 'sidepanel-tab.html',
+          enabled: true
+        });
+        
+        // Open the panel directly in response to the click
+        await chrome.sidePanel.open({ windowId: window.id });
+        openSidePanelBtn.textContent = 'Close Side Panel';
+      } else {
+        // Close the panel by disabling it
+        await chrome.sidePanel.setOptions({
+          enabled: false
+        });
+        openSidePanelBtn.textContent = 'Open Side Panel';
+      }
+    }
   } catch (error) {
-    console.error('Failed to open side panel:', error);
+    console.error('Error toggling side panel:', error);
   }
 });
 
-// Check initial auth state
+// Update the checkAuthState function to also check panel state
 async function checkAuthState() {
-   try {
+  try {
     const { user, error } = await getCurrentUser();
     if (error) throw error;
-    if (user) {
-      showLoggedInState(user);
+    
+    // Also check chrome storage as a backup
+    const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+    
+    if (user || supabaseUser) {
+      showLoggedInState(user || supabaseUser);
+      
+      // Check initial panel state
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        const isOpen = await chrome.sidePanel.getOptions({ tabId: tab.id });
+        openSidePanelBtn.textContent = isOpen?.enabled ? 'Close Side Panel' : 'Open Side Panel';
+      }
     } else {
       showLoginForm();
     }
   } catch (error) {
     console.error('Auth state check error:', error);
     showLoginForm();
-  } 
+  }
 }
 
 // Initialize

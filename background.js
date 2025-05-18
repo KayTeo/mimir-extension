@@ -216,8 +216,7 @@ chrome.commands.onCommand.addListener((command) => {
   switch (command) {
     case "action1":
       console.log("Action 1 triggered by keyboard shortcut");
-      // Toggle side panel
-      chrome.sidePanel.toggle();
+      // Add your action1 logic here
       break;
     case "action2":
       console.log("Action 2 triggered by keyboard shortcut");
@@ -226,19 +225,38 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
-// Handle side panel state changes
-chrome.sidePanel.onSetPanelState.addListener((state) => {
-  console.log('Side panel state changed:', state);
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: 'openSidePanel',
+    title: 'Open side panel',
+    contexts: ['all']
+  });
+  chrome.tabs.create({ url: 'page.html' });
 });
 
-// Function to update side panel content
-export async function updateSidePanelContent(data) {
-  try {
-    const views = await chrome.extension.getViews({ type: 'side_panel' });
-    if (views.length > 0) {
-      views[0].postMessage({ type: 'updateSidePanel', data });
-    }
-  } catch (error) {
-    console.error('Error updating side panel:', error);
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'openSidePanel') {
+    // Get the current window ID first
+    chrome.windows.getCurrent(async (window) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error getting current window:', chrome.runtime.lastError);
+        return;
+      }
+      
+      try {
+        // Open the side panel for the current window
+        await chrome.sidePanel.open({ windowId: window.id });
+      } catch (error) {
+        console.error('Error opening side panel:', error);
+      }
+    });
   }
-} 
+});
+
+chrome.runtime.onMessage.addListener((message, sender) => {
+  // The callback for runtime.onMessage must return falsy if we're not sending a response
+  (async () => {
+    console.log("message is ", message);
+    // Handle other message types here if needed
+  })();
+});
