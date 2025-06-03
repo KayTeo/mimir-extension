@@ -145,7 +145,7 @@ openSidePanelBtn.addEventListener('click', async () => {
       if (isOpening) {
         // Set the options first
         await chrome.sidePanel.setOptions({
-          path: 'sidepanel-tab.html',
+          path: 'sidepanel.html',
           enabled: true
         });
         

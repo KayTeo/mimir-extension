@@ -19,7 +19,14 @@
     "identity",
     "contextMenus",
     "commands",
-    "sidePanel"
+    "sidePanel",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
   ],
   "commands": {
     "action1": {
@@ -52,9 +59,10 @@
     ]
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://rinvhgmedtwsjwomcgwf.supabase.co https://*.googleapis.com"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   },
   "host_permissions": [
-    "https://*.googleapis.com/*"
+    "https://*.googleapis.com/*",
+    "https://rinvhgmedtwsjwomcgwf.supabase.co/*"
   ]
 } 

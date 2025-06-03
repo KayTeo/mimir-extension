@@ -5,7 +5,9 @@ module.exports = {
   mode: 'production',
   entry: {
     popup: './popup.js',
-    background: './background.js'
+    background: './background.js',
+    sidepanel: './sidepanel.js',
+    content: './content.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),

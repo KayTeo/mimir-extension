@@ -3,6 +3,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Global variable to store the selected dataset ID
+let selectedDataset = null;
+
 // Set up auth state change listener
 supabase.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
@@ -15,12 +18,13 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   } else if (event === 'SIGNED_OUT') {
     console.log('User signed out');
     // Clear the session from Chrome storage
-    await chrome.storage.local.remove(['supabaseSession', 'supabaseUser']);
+    await chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
+    selectedDataset = null;
   }
 });
 
 // Initialize auth state from storage
-chrome.storage.local.get(['supabaseSession', 'supabaseUser'], async (result) => {
+chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset'], async (result) => {
   if (result.supabaseSession) {
     try {
       // Set the session in Supabase client
@@ -30,6 +34,12 @@ chrome.storage.local.get(['supabaseSession', 'supabaseUser'], async (result) => 
         return;
       }
       console.log('Session restored from storage');
+      
+      // Restore selected dataset
+      if (result.selectedDataset) {
+        selectedDataset = result.selectedDataset;
+        console.log('Restored selected dataset:', selectedDataset);
+      }
     } catch (error) {
       console.error('Error restoring session:', error);
     }
@@ -155,15 +165,28 @@ export async function signInWithGoogle() {
   }
 } 
 
+// Handle messages from other parts of the extension
+chrome.runtime.onMessage.addListener((message, sender) => {
+  // The callback for runtime.onMessage must return falsy if we're not sending a response
+  (async () => {
+    console.log("Received message:", message);
+    
+    if (message.type === 'DATASET_SELECTED') {
+      selectedDataset = message.datasetId;
+      console.log('Dataset selected:', selectedDataset);
+      
+      // You can perform any additional actions here when the dataset changes
+    }
+  })();
+});
+
 // Create context menu items when the extension is installed
 chrome.runtime.onInstalled.addListener(() => {
-  // Create menu items directly in the context menu
   chrome.contextMenus.create({
     id: "option1",
-    title: "Option 11",
-    contexts: ["all"]
+    title: "Add selection to dataset",
+    contexts: ["selection"]  // Only show when text is selected
   });
-
 });
 
 // Handle context menu clicks
@@ -176,16 +199,28 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         console.log("No user found in storage, trying to get from Supabase");
         const { user, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
-        console.log("user is " + user);
+        console.log("user is", user);
       } else {
-        console.log("user from storage is " + supabaseUser);
+        console.log("user from storage is", supabaseUser);
       }
 
-      console.log("Option 11 clicked");
-      const content = "test";
-      const dataset_id = "1";
-      const data_point_id = "1";
+      if (!selectedDataset) {
+        console.log("No dataset selected");
+        return;
+      }
+
+      // Get the selected text from the context menu info
+      const content = info.selectionText;
+      if (!content) {
+        console.log("No text selected");
+        return;
+      }
+
+      console.log("Using dataset:", selectedDataset);
+      console.log("Selected text:", content);
       const label = "test";
+      
+      // Create the data point
       const { data: dataPoint, error: dataPointError } = await supabase
         .from('data_points')
         .insert({
@@ -193,7 +228,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           content: content.trim()
         })
         .select()
-        .single()
+        .single();
 
       if (dataPointError) throw dataPointError;
 
@@ -223,40 +258,4 @@ chrome.commands.onCommand.addListener((command) => {
       // Add your action2 logic here
       break;
   }
-});
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'openSidePanel',
-    title: 'Open side panel',
-    contexts: ['all']
-  });
-  chrome.tabs.create({ url: 'page.html' });
-});
-
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === 'openSidePanel') {
-    // Get the current window ID first
-    chrome.windows.getCurrent(async (window) => {
-      if (chrome.runtime.lastError) {
-        console.error('Error getting current window:', chrome.runtime.lastError);
-        return;
-      }
-      
-      try {
-        // Open the side panel for the current window
-        await chrome.sidePanel.open({ windowId: window.id });
-      } catch (error) {
-        console.error('Error opening side panel:', error);
-      }
-    });
-  }
-});
-
-chrome.runtime.onMessage.addListener((message, sender) => {
-  // The callback for runtime.onMessage must return falsy if we're not sending a response
-  (async () => {
-    console.log("message is ", message);
-    // Handle other message types here if needed
-  })();
 });
