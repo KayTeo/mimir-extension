@@ -189,10 +189,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Handle context menu clicks
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  switch (info.menuItemId) {
-    case "option1":
+async function add_to_dataset(selected_question, selected_label, selected_dataset) {
       // Get user from storage first
       const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
       if (!supabaseUser) {
@@ -203,29 +200,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       } else {
         console.log("user from storage is", supabaseUser);
       }
-
-      if (!selectedDataset) {
-        console.log("No dataset selected");
-        return;
-      }
-
-      // Get the selected text from the context menu info
-      const content = info.selectionText;
-      if (!content) {
-        console.log("No text selected");
-        return;
-      }
-
-      console.log("Using dataset:", selectedDataset);
-      console.log("Selected text:", content);
-      const label = "test";
       
       // Create the data point
       const { data: dataPoint, error: dataPointError } = await supabase
         .from('data_points')
         .insert({
           user_id: supabaseUser?.id || user.id,
-          content: content.trim()
+          content: selected_question.trim(),
+          label: selected_label.trim()
         })
         .select()
         .single();
@@ -237,11 +219,47 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         .from('dataset_data_points')
         .insert({
           dataset_id: selectedDataset,
-          data_point_id: dataPoint.id,
-          label: label.trim()
+          data_point_id: dataPoint.id
         });
 
       if (associationError) throw associationError;
+}
+
+var addition_state = "question" //Varies between content and label on alternate clicks
+var question = ""
+var label = ""
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  switch (info.menuItemId) {
+    case "option1":
+
+      if (addition_state == "question") {
+        question = info.selectionText;
+        if (!question) {
+          console.log("No question text selected");
+          return;
+        }
+        addition_state = "label"
+      } else {
+        label = info.selectionText;
+        if (!label) {
+          console.log("No label text selected");
+          return;
+        }
+
+        if (!selectedDataset) {
+          console.log("No dataset selected");
+          return;
+        }
+
+        addition_state = "question"
+        var status = await add_to_dataset(question, label, selectedDataset)
+        console.log("Status:", status);
+      }
+
+      console.log("Using dataset:", selectedDataset);
+      console.log("Selected question:", question);
       break;
   }
 });
