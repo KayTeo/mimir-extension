@@ -180,11 +180,17 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   })();
 });
 
+// Function to update context menu title based on state
+function updateContextMenuTitle() {
+  const title = addition_state === "question" ? "Add question to dataset" : "Add answer to dataset";
+  chrome.contextMenus.update("option1", { title });
+}
+
 // Create context menu items when the extension is installed
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "option1",
-    title: "Add selection to dataset",
+    title: "Add question to dataset", // Initial state is "question"
     contexts: ["selection"]  // Only show when text is selected
   });
 });
@@ -233,7 +239,6 @@ var label = ""
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   switch (info.menuItemId) {
     case "option1":
-
       if (addition_state == "question") {
         question = info.selectionText;
         if (!question) {
@@ -241,6 +246,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           return;
         }
         addition_state = "label"
+        updateContextMenuTitle(); // Update menu title after state change
       } else {
         label = info.selectionText;
         if (!label) {
@@ -254,6 +260,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         }
 
         addition_state = "question"
+        updateContextMenuTitle(); // Update menu title after state change
         var status = await add_to_dataset(question, label, selectedDataset)
         console.log("Status:", status);
       }

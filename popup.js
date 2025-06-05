@@ -180,8 +180,11 @@ async function checkAuthState() {
       // Check initial panel state
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab) {
-        const isOpen = await chrome.sidePanel.getOptions({ tabId: tab.id });
-        openSidePanelBtn.textContent = isOpen?.enabled ? 'Close Side Panel' : 'Open Side Panel';
+        // Initialize the side panel as closed by default
+        await chrome.sidePanel.setOptions({
+          enabled: false
+        });
+        openSidePanelBtn.textContent = 'Open Side Panel';
       }
     } else {
       showLoginForm();
