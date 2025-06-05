@@ -63,6 +63,7 @@
   },
   "host_permissions": [
     "https://*.googleapis.com/*",
-    "https://rinvhgmedtwsjwomcgwf.supabase.co/*"
+    "https://rinvhgmedtwsjwomcgwf.supabase.co/*",
+    "https://api.openai.com/*"
   ]
 } 

@@ -8,6 +8,15 @@ const userEmailElement = document.getElementById('userEmail');
 const datasetSelect = document.getElementById('datasetSelect');
 const statusElement = document.getElementById('status');
 
+// Additional DOM Elements
+const openaiKeyInput = document.getElementById('openaiKey');
+const saveApiKeyBtn = document.getElementById('saveApiKey');
+const selectedTextDiv = document.getElementById('selectedText');
+const generateQuestionsBtn = document.getElementById('generateQuestions');
+const generatedQuestionsDiv = document.getElementById('generatedQuestions');
+
+let currentSelectedText = '';
+
 // Show status message
 function showStatus(message, type = 'success') {
   statusElement.textContent = message;
@@ -102,6 +111,66 @@ datasetSelect.addEventListener('change', async () => {
   } catch (error) {
     console.error('Error saving dataset selection:', error);
     showStatus('Error saving selection', 'error');
+  }
+});
+
+// Load API key if exists
+chrome.storage.local.get(['openaiKey'], (result) => {
+  if (result.openaiKey) {
+    openaiKeyInput.value = result.openaiKey;
+  }
+});
+
+// Save API key
+saveApiKeyBtn.addEventListener('click', async () => {
+  const apiKey = openaiKeyInput.value.trim();
+  if (apiKey) {
+    await chrome.storage.local.set({ openaiKey: apiKey });
+    showStatus('API key saved successfully');
+  } else {
+    showStatus('Please enter an API key', 'error');
+  }
+});
+
+// Listen for text selection updates from content script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'TEXT_SELECTED') {
+    currentSelectedText = message.text;
+    selectedTextDiv.innerHTML = `<p>${message.text}</p>`;
+    generateQuestionsBtn.disabled = false;
+  }
+});
+
+// Generate questions
+generateQuestionsBtn.addEventListener('click', async () => {
+  if (!currentSelectedText) {
+    showStatus('Please select some text first', 'error');
+    return;
+  }
+
+  try {
+    generateQuestionsBtn.disabled = true;
+    showStatus('Generating questions...');
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'GENERATE_QUESTIONS',
+      text: currentSelectedText
+    });
+
+    if (response.success) {
+      generatedQuestionsDiv.innerHTML = response.questions
+        .split('\n')
+        .filter(q => q.trim())
+        .map(q => `<div class="question-item">${q}</div>`)
+        .join('');
+      showStatus('Questions generated successfully');
+    } else {
+      throw new Error(response.error);
+    }
+  } catch (error) {
+    showStatus(`Error generating questions: ${error.message}`, 'error');
+  } finally {
+    generateQuestionsBtn.disabled = false;
   }
 });
 

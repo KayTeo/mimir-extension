@@ -166,18 +166,20 @@ export async function signInWithGoogle() {
 } 
 
 // Handle messages from other parts of the extension
-chrome.runtime.onMessage.addListener((message, sender) => {
-  // The callback for runtime.onMessage must return falsy if we're not sending a response
-  (async () => {
-    console.log("Received message:", message);
-    
-    if (message.type === 'DATASET_SELECTED') {
-      selectedDataset = message.datasetId;
-      console.log('Dataset selected:', selectedDataset);
-      
-      // You can perform any additional actions here when the dataset changes
-    }
-  })();
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // The callback for runtime.onMessage must return true if we want to send a response asynchronously
+  if (message.type === 'GENERATE_QUESTIONS') {
+    (async () => {
+      try {
+        const questions = await generateQuestions(message.text);
+        sendResponse({ success: true, questions });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true; // Will respond asynchronously
+  }
+  // ... existing message handling code ...
 });
 
 // Function to update context menu title based on state
@@ -284,3 +286,41 @@ chrome.commands.onCommand.addListener((command) => {
       break;
   }
 });
+
+// Function to generate questions using LLM
+async function generateQuestions(text) {
+  try {
+    // You'll need to replace this with your actual LLM API endpoint and key
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await chrome.storage.local.get(['openaiKey']).then(result => result.openaiKey)}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that generates insightful questions based on given text. Generate questions that test understanding and encourage critical thinking.'
+          },
+          {
+            role: 'user',
+            content: `Generate 3 questions based on this text: "${text}"`
+          }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating questions:', error);
+    throw error;
+  }
+}

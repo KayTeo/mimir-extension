@@ -53,6 +53,44 @@
         color: #137333;
         display: block;
       }
+
+      .api-config {
+        margin: 16px 0;
+      }
+      
+      .api-config input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      
+      .selected-text {
+        background: #f5f5f5;
+        padding: 12px;
+        border-radius: 4px;
+        margin: 8px 0;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      
+      .generated-questions {
+        margin-top: 16px;
+      }
+      
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      
+      .question-item {
+        background: #fff;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
     </style>
   </head>
   <body>
@@ -67,6 +105,21 @@
         <select id="datasetSelect">
           <option value="">Loading datasets...</option>
         </select>
+      </div>
+
+      <div class="api-config">
+        <h3>OpenAI Configuration</h3>
+        <input type="password" id="openaiKey" placeholder="Enter OpenAI API Key" />
+        <button id="saveApiKey">Save API Key</button>
+      </div>
+
+      <div class="question-generator">
+        <h3>Question Generator</h3>
+        <div id="selectedText" class="selected-text">
+          <p><em>No text selected. Select text on the page to generate questions.</em></p>
+        </div>
+        <button id="generateQuestions" disabled>Generate Questions</button>
+        <div id="generatedQuestions" class="generated-questions"></div>
       </div>
 
       <div id="status" class="status"></div>
