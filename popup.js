@@ -1,4 +1,4 @@
-import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './background.js';
+import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './auth.js';
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');

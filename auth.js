@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// TODO: Sometimes login doesn't happen, figure out why. Probably async error.
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function signInWithEmail(email, password) {
   try {
@@ -106,6 +108,8 @@ export async function signInWithGoogle() {
             });
 
             if (error) throw error;
+            const user = await supabase.auth.getUser();
+            console.log(user);
             resolve({ data, error: null });
           } catch (error) {
             console.error('Token exchange error:', error);
