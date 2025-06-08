@@ -1,8 +1,12 @@
 import { supabase } from './auth.js';
 import { run_manual, run_auto } from './gen_functions.js';
+import { initalize_storage_variables } from './chrome_storage_variables.js';
 
 // Global variable to store the selected dataset ID
 let selectedDataset = null;
+
+// Initialize storage variables
+initalize_storage_variables();
 
 // Set up auth state change listener
 supabase.auth.onAuthStateChange(async (event, session) => {
