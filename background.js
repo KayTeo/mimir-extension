@@ -1,33 +1,20 @@
-import { supabase, signInWithGoogle } from './auth.js';
+import { supabase, restoreSession, setupAuthStateListener } from './supabaseClient.js';
 import { initalize_storage_variables } from './chrome_storage_variables.js';
 
 // Handle browser installation
 chrome.runtime.onInstalled.addListener(async () => {
   await initalize_storage_variables();
+  setupAuthStateListener();
 });
 
-//Handle browser startup
-// Initialize auth state from storage
-// TODO: Handle when not logged in at first
-chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset'], async (result) => {
-  if (result.supabaseSession) {
-    try {
-      // Set the session in Supabase client
-      const { error } = await supabase.auth.setSession(result.supabaseSession);
-      if (error) {
-        console.error('Error setting session:', error);
-        return;
-      }
-      console.log('Session restored from storage');
-      
-      // Restore selected dataset
-      if (result.selectedDataset) {
-        selectedDataset = result.selectedDataset;
-        console.log('Restored selected dataset:', selectedDataset);
-      }
-    } catch (error) {
-      console.error('Error restoring session:', error);
-    }
+chrome.storage.local.get(['selectedDataset'], async (result) => {
+  // Restore session
+  await restoreSession();
+  
+  // Restore selected dataset
+  if (result.selectedDataset) {
+    selectedDataset = result.selectedDataset;
+    console.log('Restored selected dataset:', selectedDataset);
   }
 });
 
@@ -114,10 +101,6 @@ export async function run_auto(info) {
   try {
     var result = await chrome.storage.local.get(["system_prompt"]);
     var prompt = result.system_prompt + " Text: " + info.selectionText;
-    console.log("Result: ", result);
-    console.log(result.system_prompt);
-    console.log("Prompt: ", prompt);
-
     const { data, errors } = await supabase.functions.invoke('llm-proxy', {
       body: {
         name: 'Functions',
@@ -126,9 +109,26 @@ export async function run_auto(info) {
     })
     console.log(data);
     //TODO: Parse response into Q/A
+    // Parse response into question and answer
+    const questionMatch = data.match(/###QUESTION###(.*?)###ANSWER###/s);
+    const answerMatch = data.match(/###ANSWER###(.*?)$/s);
+    
+    if (!questionMatch || !answerMatch) {
+      console.log("Could not parse question/answer from response");
+      return;
+    }
+
+    const question = questionMatch[1].trim();
+    const answer = answerMatch[1].trim();
+
+    const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
+
+    var status = await add_to_dataset(question, answer, selectedDataset)
+    console.log("Status:", status);
     //TODO: Insert into datasaet
     //TODO: Update sidepanel with new questions
   } catch (error) {
+    console.error("Error in run_auto:", error);
   }
 }
 

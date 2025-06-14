@@ -1,7 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { supabase } from './supabaseClient.js';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export { supabase };
 
 export async function signInWithEmail(email, password) {
   try {
@@ -89,7 +88,6 @@ export async function signInWithGoogle() {
 
           try {
             const url = new URL(redirectedTo);
-            // Extract the hash fragment and remove the leading #
             const hashFragment = url.hash.substring(1);
             const params = new URLSearchParams(hashFragment);
             const idToken = params.get('id_token');

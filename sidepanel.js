@@ -1,14 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import { supabase, restoreSession } from './supabaseClient.js';
 
 // DOM Elements
 const userEmailElement = document.getElementById('userEmail');
 const datasetSelect = document.getElementById('datasetSelect');
 const statusElement = document.getElementById('status');
 
-const selectedTextDiv = document.getElementById('selectedText');
+const questionText = document.getElementById('questionText');
+const answerText = document.getElementById('answerText');
 const updateQuestionsBtn = document.getElementById('updateQuestions');
 
 // Show status message
@@ -56,6 +54,7 @@ async function loadDatasets(userId) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+    console.log(datasets)
 
     if (error) throw error;
 
@@ -111,7 +110,6 @@ datasetSelect.addEventListener('change', async () => {
 // Generate questions
 updateQuestionsBtn.addEventListener('click', async () => {
 
-
   try {
 
   } catch (error) {
@@ -121,7 +119,12 @@ updateQuestionsBtn.addEventListener('click', async () => {
 
 // Initialize
 async function initialize() {
+  // First restore the session
+  await restoreSession();
+  
   const user = await loadUserData();
+  console.log("User: ", user);
+  console.log("User ID: ", user.id);  
   if (user) {
     await loadDatasets(user.id);
   }
