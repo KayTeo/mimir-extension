@@ -9,8 +9,21 @@ export async function initalize_storage_variables() {
     if( selectedDataset === undefined) ;
     if( openaiKey === undefined) ;
     if( system_prompt === undefined)
-        await chrome.storage.local.set({ "system_prompt" : "You are a helpful assistant that can answer questions about the text you are given. You are given a text and you need to answer the question based on the text."});
-    if( mode === undefined) ;
+        await chrome.storage.local.set({ "system_prompt" :
+    `
+        Convert the following text into a clear **question** and **answer** pair:
+
+        Text: "{input_text}"
+
+        Guidelines:
+        - The question should be self-contained and answerable from the text.
+        - The answer should be concise but complete.
+        - If the text lists items (like 1, 2, 3), include them in the answer.
+    `
+    });
+
+
+    if( mode === undefined) await chrome.storage.local.set({ "mode" : "auto"});
 
 }
 

@@ -8,9 +8,6 @@ const userEmailElement = document.getElementById('userEmail');
 const datasetSelect = document.getElementById('datasetSelect');
 const statusElement = document.getElementById('status');
 
-// Additional DOM Elements
-const openaiKeyInput = document.getElementById('openaiKey');
-const saveApiKeyBtn = document.getElementById('saveApiKey');
 const selectedTextDiv = document.getElementById('selectedText');
 const generateQuestionsBtn = document.getElementById('generateQuestions');
 const generatedQuestionsDiv = document.getElementById('generatedQuestions');
@@ -114,23 +111,6 @@ datasetSelect.addEventListener('change', async () => {
   }
 });
 
-// Load API key if exists
-chrome.storage.local.get(['openaiKey'], (result) => {
-  if (result.openaiKey) {
-    openaiKeyInput.value = result.openaiKey;
-  }
-});
-
-// Save API key
-saveApiKeyBtn.addEventListener('click', async () => {
-  const apiKey = openaiKeyInput.value.trim();
-  if (apiKey) {
-    await chrome.storage.local.set({ openaiKey: apiKey });
-    showStatus('API key saved successfully');
-  } else {
-    showStatus('Please enter an API key', 'error');
-  }
-});
 
 // Listen for text selection updates from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

@@ -113,6 +113,18 @@
         border: 1px solid #ddd;
         font-size: 14px;
       }
+
+      textarea.selected-text {
+        width: 100%;
+        min-height: 100px;
+        resize: vertical;
+        font-family: inherit;
+      }
+
+      textarea.selected-text:focus {
+        outline: none;
+        border-color: #1a73e8;
+      }
       
       .generated-questions {
         margin-top: 16px;
@@ -159,19 +171,12 @@
         </select>
       </div>
 
-      <div class="api-config">
-        <h3>OpenAI Configuration</h3>
-        <input type="password" id="openaiKey" placeholder="Enter OpenAI API Key" />
-        <button id="saveApiKey">Save API Key</button>
-      </div>
-
       <div class="question-generator">
-        <h3>Question Generator</h3>
-        <div id="selectedText" class="selected-text">
-          <p><em>No text selected. Select text on the page to generate questions.</em></p>
-        </div>
-        <button id="generateQuestions" disabled>Generate Questions</button>
-        <div id="generatedQuestions" class="generated-questions"></div>
+        <h3>Question</h3>
+        <textarea id="selectedText" class="selected-text" placeholder="No text selected. Right-click and click 'Remember This' text on the page to question/answer."></textarea>
+        <h3>Answer</h3>
+        <textarea id="selectedTextAnswer" class="selected-text" placeholder="No text selected. Right-click and click 'Remember This' text on the page to question/answer."></textarea>
+        <button id="generateQuestions" disabled>Update Questions</button>
       </div>
 
       <div class="card-history">

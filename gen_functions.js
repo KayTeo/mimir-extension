@@ -1,5 +1,4 @@
-
-
+//TODO: Write update version for sidepanel
 async function add_to_dataset(selected_question, selected_label, selected_dataset) {
   // Get user from storage first
   const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
@@ -72,6 +71,26 @@ export async function run_manual(info) {
 }
 
 export async function run_auto(info) {
-  // TODO: Implement auto mode
   console.log("Running auto");
+  if (!info.selectionText) {
+    console.log("No text selected");
+    return;
+  }
+
+  try {
+    var prompt = chrome.storage.local.get(["mode"]).then(result => result.mode + " Text: " + info.selectionText);
+    console.log("Prompt: ", prompt);
+
+    const { questions, errors } = await supabase.functions.invoke('llm-proxy', {
+      body: {
+        name: 'Functions',
+        prompt: prompt
+       },
+    })
+    console.log(questions);
+    //TODO: Parse response into Q/A
+    //TODO: Insert into datasaet
+    //TODO: Update sidepanel with new questions
+  } catch (error) {
+  }
 }

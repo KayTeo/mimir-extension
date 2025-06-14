@@ -137,11 +137,21 @@ googleSignInBtn.addEventListener('click', async (e) => {
     });
     
     if (result.error) throw result.error;
+    const window = await chrome.windows.getCurrent();
+
+    showLoggedInState(result.data.user);
     
-    // Check if we need to update the UI
-    if (result.data && result.data.user) {
-      showLoggedInState(result.data.user);
-    }
+
+    //TODO: Make side panel open on login
+    await chrome.sidePanel.setOptions({
+      path: 'sidepanel.html',
+      enabled: true
+    });
+    
+    // Open the panel directly in response to the click
+    await chrome.sidePanel.open({ windowId: window.id });
+    
+    openSidePanelBtn.textContent = 'Close Side Panel';
   } catch (error) {
     showError(error.message || 'Failed to sign in with Google');
   }
@@ -167,6 +177,7 @@ openSidePanelBtn.addEventListener('click', async () => {
         
         // Open the panel directly in response to the click
         await chrome.sidePanel.open({ windowId: window.id });
+        
         openSidePanelBtn.textContent = 'Close Side Panel';
       } else {
         // Close the panel by disabling it

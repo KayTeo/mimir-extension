@@ -1,12 +1,130 @@
 import { supabase, signInWithGoogle } from './auth.js';
-import { run_manual, run_auto } from './gen_functions.js';
 import { initalize_storage_variables } from './chrome_storage_variables.js';
 
-// Global variable to store the selected dataset ID
-let selectedDataset = null;
+//TODO: Write update version for sidepanel
+async function add_to_dataset(selected_question, selected_label, selected_dataset) {
+  // Get user from storage first
+  const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+  if (!supabaseUser) {
+    console.log("No user found in storage, trying to get from Supabase");
+    const { user, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    console.log("user is", user);
+  } else {
+    console.log("user from storage is", supabaseUser);
+  }
+  
+  // Create the data point
+  const { data: dataPoint, error: dataPointError } = await supabase
+    .from('data_points')
+    .insert({
+      user_id: supabaseUser?.id || user.id,
+      content: selected_question.trim(),
+      label: selected_label.trim()
+    })
+    .select()
+    .single();
 
-// Initialize storage variables
-initalize_storage_variables();
+  if (dataPointError) throw dataPointError;
+
+  // Create the association
+  const { error: associationError } = await supabase
+    .from('dataset_data_points')
+    .insert({
+      dataset_id: selectedDataset,
+      data_point_id: dataPoint.id
+    });
+
+  if (associationError) throw associationError;
+}
+
+var addition_state = "question" //Varies between content and label on alternate clicks
+var question = ""
+var label = ""
+
+export async function run_manual(info) {
+  if (addition_state == "question") {
+    question = info.selectionText;
+    if (!question) {
+      console.log("No question text selected");
+      return;
+    }
+    addition_state = "label"
+    updateContextMenuTitle(); // Update menu title after state change
+  } else {
+    label = info.selectionText;
+    if (!label) {
+      console.log("No label text selected");
+      return;
+    }
+
+    if (!selectedDataset) {
+      console.log("No dataset selected");
+      return;
+    }
+
+    addition_state = "question"
+    updateContextMenuTitle(); // Update menu title after state change
+    var status = await add_to_dataset(question, label, selectedDataset)
+    console.log("Status:", status);
+  }
+
+  console.log("Using dataset:", selectedDataset);
+  console.log("Selected question:", question);
+}
+
+
+export async function run_auto(info) {
+  console.log("Running auto");
+  if (!info.selectionText) {
+    console.log("No text selected");
+    return;
+  }
+
+  try {
+    var prompt = await chrome.storage.local.get(["mode"]);
+    prompt = prompt.mode + " Text: " + info.selectionText;
+    console.log("Prompt: ", prompt);
+
+    const { data, errors } = await supabase.functions.invoke('llm-proxy', {
+      body: {
+        name: 'Functions',
+        prompt: prompt
+       },
+    })
+    console.log(data);
+    //TODO: Parse response into Q/A
+    //TODO: Insert into datasaet
+    //TODO: Update sidepanel with new questions
+  } catch (error) {
+  }
+}
+// Handle browser startup
+chrome.runtime.onStartup.addListener(async () => {
+  console.log('Browser started up - initializing extension');
+  // Initialize storage variables
+  await initalize_storage_variables();
+
+  // Restore session if it exists
+  const result = await chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset']);
+  if (result.supabaseSession) {
+    try {
+      const { error } = await supabase.auth.setSession(result.supabaseSession);
+      if (error) {
+        console.error('Error setting session:', error);
+        return;
+      }
+      console.log('Session restored from storage on startup');
+      
+      if (result.selectedDataset) {
+        selectedDataset = result.selectedDataset;
+        console.log('Restored selected dataset on startup:', selectedDataset);
+      }
+    } catch (error) {
+      console.error('Error restoring session on startup:', error);
+    }
+  }
+});
 
 // Set up auth state change listener
 supabase.auth.onAuthStateChange(async (event, session) => {
@@ -64,19 +182,20 @@ function updateContextMenuTitle() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "option1",
-    title: "Add question to dataset", // Initial state is "question"
+    title: "Remember This!", // Initial state is "question"
     contexts: ["selection"]  // Only show when text is selected
   });
 });
+
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   switch (info.menuItemId) {
     case "option1":
-      var mode;
-      chrome.storage.local.get(['mode'], (result) => {
-        mode = result;
-      })
+      console.log("Context menu clicked");
+      const result = await chrome.storage.local.get(['mode']);
+      const mode = result.mode;
+      console.log("Mode: ", mode);
       if (mode === "manual") await run_manual(info);
       if (mode === "auto") await run_auto(info);
       break;
@@ -98,61 +217,6 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
-// TODO: Investigate generate questions handling
-// Handle messages from other parts of the extension
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // The callback for runtime.onMessage must return true if we want to send a response asynchronously
-  if (message.type === 'GENERATE_QUESTIONS') {
-    (async () => {
-      try {
-        const questions = await generateQuestions(message.text);
-        sendResponse({ success: true, questions });
-      } catch (error) {
-        sendResponse({ success: false, error: error.message });
-      }
-    })();
-    return true; // Will respond asynchronously
-  }
-  // ... existing message handling code ...
-});
-
-// Function to generate questions using LLM
-async function generateQuestions(text) {
-  try {
-    // You'll need to replace this with your actual LLM API endpoint and key
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await chrome.storage.local.get(['openaiKey']).then(result => result.openaiKey)}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that generates insightful questions based on given text. Generate questions that test understanding and encourage critical thinking.'
-          },
-          {
-            role: 'user',
-            content: `Generate 3 questions based on this text: "${text}"`
-          }
-        ],
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('Error generating questions:', error);
-    throw error;
-  }
-}
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
