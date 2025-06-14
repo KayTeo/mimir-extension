@@ -1,4 +1,4 @@
-import { supabase } from './auth.js';
+import { supabase, signInWithGoogle } from './auth.js';
 import { run_manual, run_auto } from './gen_functions.js';
 import { initalize_storage_variables } from './chrome_storage_variables.js';
 
@@ -152,4 +152,24 @@ async function generateQuestions(text) {
     console.error('Error generating questions:', error);
     throw error;
   }
+}
+
+// Handle messages from popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'GOOGLE_SIGN_IN') {
+    handleGoogleSignIn()
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ data: null, error }));
+    return true; // Required for async sendResponse
+  }
+
+});
+
+async function handleGoogleSignIn() {
+  const result = await signInWithGoogle();
+  if (result.data && !result.error) {
+    // Reopen the popup after successful authentication
+    chrome.action.openPopup();
+  }
+  return result;
 }

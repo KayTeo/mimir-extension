@@ -36,8 +36,11 @@ export async function signUpWithEmail(email, password) {
 }
 
 export async function signOut() {
-   try {
+  try {
     const { error } = await supabase.auth.signOut();
+    chrome.storage.local.clear();
+    chrome.identity.clearAllCachedAuthTokens();
+    supabase.auth.signOut();
     if (error) throw error;
     return { error: null };
   } catch (error) {
@@ -47,14 +50,9 @@ export async function signOut() {
 }
 
 export async function getCurrentUser() {
-   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    return { user, error: null };
-  } catch (error) {
-    console.error('Get current user error:', error);
-    return { user: null, error };
-  } 
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (user) return { user, error: null };
+  return { user: null, error };
 }
 
 export async function resetPassword(email) {
@@ -75,6 +73,7 @@ export async function signInWithGoogle() {
     authURL.searchParams.set('client_id', manifest.oauth2.client_id);
     authURL.searchParams.set('response_type', 'id_token');
     authURL.searchParams.set('access_type', 'offline');
+    authURL.searchParams.set('prompt', 'select_account');
     authURL.searchParams.set('redirect_uri', `https://dknmebcamfpnjhijpomlgdlcipchlbka.chromiumapp.org`);
     authURL.searchParams.set('scope', manifest.oauth2.scopes.join(' '));
     console.log(chrome.runtime.id);
@@ -108,8 +107,6 @@ export async function signInWithGoogle() {
             });
 
             if (error) throw error;
-            const user = await supabase.auth.getUser();
-            console.log(user);
             resolve({ data, error: null });
           } catch (error) {
             console.error('Token exchange error:', error);
@@ -118,6 +115,7 @@ export async function signInWithGoogle() {
         }
       );
     });
+
   } catch (error) {
     console.error('Google sign in error:', error);
     return { data: null, error };

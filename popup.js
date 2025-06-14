@@ -123,9 +123,25 @@ googleSignInBtn.addEventListener('click', async (e) => {
   clearMessages();
 
   try {
-    const { data, error } = await signInWithGoogle();
-    if (error) throw error;
-    showLoggedInState(data.user);
+    // Store the current state before starting OAuth
+    const currentState = {
+      isLoginForm: loginForm.style.display === 'block',
+      isSignupForm: signupForm.style.display === 'block',
+      isLoggedIn: loggedInState.style.display === 'block'
+    };
+
+    const result = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'GOOGLE_SIGN_IN' }, (response) => {
+        resolve(response);
+      });
+    });
+    
+    if (result.error) throw result.error;
+    
+    // Check if we need to update the UI
+    if (result.data && result.data.user) {
+      showLoggedInState(result.data.user);
+    }
   } catch (error) {
     showError(error.message || 'Failed to sign in with Google');
   }
@@ -167,32 +183,27 @@ openSidePanelBtn.addEventListener('click', async () => {
 
 // Update the checkAuthState function to also check panel state
 async function checkAuthState() {
-  try {
-    const { user, error } = await getCurrentUser();
-    if (error) throw error;
+  const { user, error } = await getCurrentUser();
+  // Also check chrome storage as a backup
+  const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+  
+  if (user || supabaseUser) {
+    showLoggedInState(user || supabaseUser);
     
-    // Also check chrome storage as a backup
-    const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
-    
-    if (user || supabaseUser) {
-      showLoggedInState(user || supabaseUser);
-      
-      // Check initial panel state
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) {
-        // Initialize the side panel as closed by default
-        await chrome.sidePanel.setOptions({
-          enabled: false
-        });
-        openSidePanelBtn.textContent = 'Open Side Panel';
-      }
-    } else {
-      showLoginForm();
+    // Check initial panel state
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      // Initialize the side panel as closed by default
+      await chrome.sidePanel.setOptions({
+        enabled: false
+      });
+      openSidePanelBtn.textContent = 'Open Side Panel';
     }
-  } catch (error) {
-    console.error('Auth state check error:', error);
+  } else {
+    console.log("Auth state exception: ", error);
     showLoginForm();
   }
+
 }
 
 // Initialize
