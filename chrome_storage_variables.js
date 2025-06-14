@@ -3,27 +3,24 @@ export async function initalize_storage_variables() {
     
     const { supabaseSession, supabaseUser, selectedDataset, openaiKey, system_prompt, mode } =
     await chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset', 'openaiKey', 'system_prompt', 'mode']);
-    
-    if( supabaseSession === undefined) ;
-    if( supabaseUser === undefined) ;
-    if( selectedDataset === undefined) ;
-    if( openaiKey === undefined) ;
-    if( system_prompt === undefined)
+
+    if(!system_prompt) {
+        console.log("Initializing system prompt");
         await chrome.storage.local.set({ "system_prompt" :
     `
-        Convert the following text into a clear **question** and **answer** pair:
-
-        Text: "{input_text}"
-
+        Convert the following text into a single clear **question** and **answer** pair
+        labled ###QUESTION### and ###ANSWER###:
         Guidelines:
         - The question should be self-contained and answerable from the text.
         - The answer should be concise but complete.
         - If the text lists items (like 1, 2, 3), include them in the answer.
     `
     });
+    }
 
-
-    if( mode === undefined) await chrome.storage.local.set({ "mode" : "auto"});
+    if( mode === undefined) {
+        await chrome.storage.local.set({ "mode" : "auto"});
+    }
 
 }
 

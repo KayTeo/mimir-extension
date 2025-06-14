@@ -82,8 +82,10 @@ export async function run_auto(info) {
   }
 
   try {
-    var prompt = await chrome.storage.local.get(["mode"]);
-    prompt = prompt.mode + " Text: " + info.selectionText;
+    var result = await chrome.storage.local.get(["system_prompt"]);
+    var prompt = result.system_prompt + " Text: " + info.selectionText;
+    console.log("Result: ", result);
+    console.log(result.system_prompt);
     console.log("Prompt: ", prompt);
 
     const { data, errors } = await supabase.functions.invoke('llm-proxy', {
@@ -100,7 +102,7 @@ export async function run_auto(info) {
   }
 }
 // Handle browser startup
-chrome.runtime.onStartup.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async () => {
   console.log('Browser started up - initializing extension');
   // Initialize storage variables
   await initalize_storage_variables();
