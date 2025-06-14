@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-
-// TODO: Sometimes login doesn't happen, figure out why. Probably async error.
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function signInWithEmail(email, password) {
@@ -76,8 +74,6 @@ export async function signInWithGoogle() {
     authURL.searchParams.set('prompt', 'select_account');
     authURL.searchParams.set('redirect_uri', `https://dknmebcamfpnjhijpomlgdlcipchlbka.chromiumapp.org`);
     authURL.searchParams.set('scope', manifest.oauth2.scopes.join(' '));
-    console.log(chrome.runtime.id);
-    console.log(`https://${chrome.runtime.id}.chromiumapp.org/`);
     return new Promise((resolve, reject) => {
       chrome.identity.launchWebAuthFlow(
         {

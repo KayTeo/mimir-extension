@@ -9,10 +9,7 @@ const datasetSelect = document.getElementById('datasetSelect');
 const statusElement = document.getElementById('status');
 
 const selectedTextDiv = document.getElementById('selectedText');
-const generateQuestionsBtn = document.getElementById('generateQuestions');
-const generatedQuestionsDiv = document.getElementById('generatedQuestions');
-
-let currentSelectedText = '';
+const updateQuestionsBtn = document.getElementById('updateQuestions');
 
 // Show status message
 function showStatus(message, type = 'success') {
@@ -111,46 +108,14 @@ datasetSelect.addEventListener('change', async () => {
   }
 });
 
-
-// Listen for text selection updates from content script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'TEXT_SELECTED') {
-    currentSelectedText = message.text;
-    selectedTextDiv.innerHTML = `<p>${message.text}</p>`;
-    generateQuestionsBtn.disabled = false;
-  }
-});
-
 // Generate questions
-generateQuestionsBtn.addEventListener('click', async () => {
-  if (!currentSelectedText) {
-    showStatus('Please select some text first', 'error');
-    return;
-  }
+updateQuestionsBtn.addEventListener('click', async () => {
+
 
   try {
-    generateQuestionsBtn.disabled = true;
-    showStatus('Generating questions...');
 
-    const response = await chrome.runtime.sendMessage({
-      type: 'GENERATE_QUESTIONS',
-      text: currentSelectedText
-    });
-
-    if (response.success) {
-      generatedQuestionsDiv.innerHTML = response.questions
-        .split('\n')
-        .filter(q => q.trim())
-        .map(q => `<div class="question-item">${q}</div>`)
-        .join('');
-      showStatus('Questions generated successfully');
-    } else {
-      throw new Error(response.error);
-    }
   } catch (error) {
-    showStatus(`Error generating questions: ${error.message}`, 'error');
   } finally {
-    generateQuestionsBtn.disabled = false;
   }
 });
 

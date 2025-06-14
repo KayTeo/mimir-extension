@@ -1,8 +1,8 @@
 // Chrome storage variables are persistent, but it is useful to initialize them especially on first install
 export async function initalize_storage_variables() {
     
-    const { supabaseSession, supabaseUser, selectedDataset, openaiKey, system_prompt, mode } =
-    await chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset', 'openaiKey', 'system_prompt', 'mode']);
+    const { supabaseSession, supabaseUser, selectedDataset, system_prompt, mode } =
+    await chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset', 'system_prompt', 'mode']);
 
     if(!system_prompt) {
         console.log("Initializing system prompt");
@@ -18,7 +18,7 @@ export async function initalize_storage_variables() {
     });
     }
 
-    if( mode === undefined) {
+    if(!mode) {
         await chrome.storage.local.set({ "mode" : "auto"});
     }
 

@@ -1,6 +1,36 @@
 import { supabase, signInWithGoogle } from './auth.js';
 import { initalize_storage_variables } from './chrome_storage_variables.js';
 
+// Handle browser installation
+chrome.runtime.onInstalled.addListener(async () => {
+  await initalize_storage_variables();
+});
+
+//Handle browser startup
+// Initialize auth state from storage
+// TODO: Handle when not logged in at first
+chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset'], async (result) => {
+  if (result.supabaseSession) {
+    try {
+      // Set the session in Supabase client
+      const { error } = await supabase.auth.setSession(result.supabaseSession);
+      if (error) {
+        console.error('Error setting session:', error);
+        return;
+      }
+      console.log('Session restored from storage');
+      
+      // Restore selected dataset
+      if (result.selectedDataset) {
+        selectedDataset = result.selectedDataset;
+        console.log('Restored selected dataset:', selectedDataset);
+      }
+    } catch (error) {
+      console.error('Error restoring session:', error);
+    }
+  }
+});
+
 //TODO: Write update version for sidepanel
 async function add_to_dataset(selected_question, selected_label, selected_dataset) {
   // Get user from storage first
@@ -101,32 +131,7 @@ export async function run_auto(info) {
   } catch (error) {
   }
 }
-// Handle browser startup
-chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Browser started up - initializing extension');
-  // Initialize storage variables
-  await initalize_storage_variables();
 
-  // Restore session if it exists
-  const result = await chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset']);
-  if (result.supabaseSession) {
-    try {
-      const { error } = await supabase.auth.setSession(result.supabaseSession);
-      if (error) {
-        console.error('Error setting session:', error);
-        return;
-      }
-      console.log('Session restored from storage on startup');
-      
-      if (result.selectedDataset) {
-        selectedDataset = result.selectedDataset;
-        console.log('Restored selected dataset on startup:', selectedDataset);
-      }
-    } catch (error) {
-      console.error('Error restoring session on startup:', error);
-    }
-  }
-});
 
 // Set up auth state change listener
 supabase.auth.onAuthStateChange(async (event, session) => {
@@ -145,34 +150,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// Initialize auth state from storage
-// TODO: Handle when not logged in at first
-chrome.storage.local.get(['supabaseSession', 'supabaseUser', 'selectedDataset'], async (result) => {
-  if (result.supabaseSession) {
-    try {
-      // Set the session in Supabase client
-      const { error } = await supabase.auth.setSession(result.supabaseSession);
-      if (error) {
-        console.error('Error setting session:', error);
-        return;
-      }
-      console.log('Session restored from storage');
-      
-      // Restore selected dataset
-      if (result.selectedDataset) {
-        selectedDataset = result.selectedDataset;
-        console.log('Restored selected dataset:', selectedDataset);
-      }
-    } catch (error) {
-      console.error('Error restoring session:', error);
-    }
-  }
-});
 
 // Modes: manual, auto
 // Manual is where user manually chooses question and answer
 // Auto is where LLM generates it
-chrome.storage.local.set({ "mode" : "auto"})
 // Function to update context menu title based on state
 // TODO: Modify to include mode state, possibly move to gen_functions.js
 function updateContextMenuTitle() {
