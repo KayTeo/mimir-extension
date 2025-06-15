@@ -7,6 +7,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   setupAuthStateListener();
 });
 
+
+let selectedDataset = null;
 chrome.storage.local.get(['selectedDataset'], async (result) => {
   // Restore session
   await restoreSession();
@@ -121,17 +123,21 @@ export async function run_auto(info) {
     const question = questionMatch[1].trim();
     const answer = answerMatch[1].trim();
 
-    const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
-
+    //const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
+    console.log("Selected dataset:", selectedDataset);
     var status = await add_to_dataset(question, answer, selectedDataset)
     console.log("Status:", status);
-    //TODO: Insert into datasaet
-    //TODO: Update sidepanel with new questions
+
+
+    chrome.runtime.sendMessage({
+      type: 'LOAD_QA',
+      question: question,
+      answer: answer
+    });
   } catch (error) {
     console.error("Error in run_auto:", error);
   }
 }
-
 
 // Set up auth state change listener
 supabase.auth.onAuthStateChange(async (event, session) => {
@@ -149,7 +155,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     selectedDataset = null;
   }
 });
-
 
 // Modes: manual, auto
 // Manual is where user manually chooses question and answer
@@ -220,3 +225,11 @@ async function handleGoogleSignIn() {
   }
   return result;
 }
+
+// Listen for changes to selectedDataset in storage
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.selectedDataset) {
+    selectedDataset = changes.selectedDataset.newValue;
+    console.log("Selected dataset updated from storage:", selectedDataset);
+  }
+});

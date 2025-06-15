@@ -132,3 +132,15 @@ async function initialize() {
 
 // Start initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', initialize); 
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'LOAD_QA') {
+    console.log("Loading QA");
+    if (request.question && request.answer) {
+      questionText.value = request.question;
+      answerText.value = request.answer;
+    } else {
+      console.error('Question or answer input elements not found');
+    }
+  }
+});
