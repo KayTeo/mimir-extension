@@ -109,12 +109,19 @@ datasetSelect.addEventListener('change', async () => {
 
 // Generate questions
 updateQuestionsBtn.addEventListener('click', async () => {
-
+  
   try {
-
+    chrome.runtime.sendMessage({
+      type: 'UPDATE_DATA_POINT',
+      question: questionText.value,
+      answer: answerText.value,
+      dataset: datasetSelect.value
+    });
+    showStatus('Data point updated'); 
   } catch (error) {
-  } finally {
-  }
+    console.error('Error updating data point:', error);
+    showStatus('Error updating data point', 'error');
+  } 
 });
 
 // Initialize

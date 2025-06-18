@@ -30,7 +30,7 @@ chrome.storage.local.get(['selectedDataset'], async (result) => {
   }
 });
 
-//TODO: Write update version for sidepanel
+var current_data_point_id = null;
 async function add_to_dataset(selected_question, selected_label, selected_dataset) {
   // Get user from storage first
   const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
@@ -53,6 +53,42 @@ async function add_to_dataset(selected_question, selected_label, selected_datase
     })
     .select()
     .single();
+
+
+  if (dataPointError) throw dataPointError;
+  current_data_point_id = dataPoint.id;
+
+  // Create the association
+  const { error: associationError } = await supabase
+    .from('dataset_data_points')
+    .insert({
+      dataset_id: selectedDataset,
+      data_point_id: dataPoint.id
+    });
+
+  if (associationError) throw associationError;
+}
+
+async function update_to_dataset(selected_question, selected_label, selected_dataset) {
+  // Get user from storage first
+  const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+  if (!supabaseUser) {
+    console.log("No user found in storage, trying to get from Supabase");
+    const { user, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    console.log("user is", user);
+  } else {
+    console.log("user from storage is", supabaseUser);
+  }
+  
+  // Create the data point
+  const { data: dataPoint, error: dataPointError } = await supabase
+    .from('data_points')
+    .update({
+      content: selected_question.trim(),
+      label: selected_label.trim()
+    })
+    .eq('id', current_data_point_id);
 
   if (dataPointError) throw dataPointError;
 
@@ -219,8 +255,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ data: null, error }));
     return true; // Required for async sendResponse
+  } else if (request.type === 'UPDATE_DATA_POINT') {
+    update_to_dataset(request.question, request.answer, request.dataset);
+    return true;
   }
-
 });
 
 async function handleGoogleSignIn() {
