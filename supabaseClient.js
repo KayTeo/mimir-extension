@@ -11,6 +11,13 @@ export async function restoreSession() {
     const { error } = await supabase.auth.setSession(supabaseSession);
     if (error) {
       console.error('Error restoring session:', error);
+      if (error.message.includes('Invalid Refresh Token')) {
+        console.log('Refresh token invalid - requiring reauthentication');
+        await supabase.auth.signOut();
+        await chrome.storage.local.remove('supabaseSession');
+        chrome.runtime.sendMessage({ type: 'REAUTH_REQUIRED' });
+        return false;
+      }
       return false;
     }
     return true;

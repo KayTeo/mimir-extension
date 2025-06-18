@@ -179,6 +179,7 @@ openSidePanelBtn.addEventListener('click', async () => {
         await chrome.sidePanel.open({ windowId: window.id });
         
         openSidePanelBtn.textContent = 'Close Side Panel';
+
       } else {
         // Close the panel by disabling it
         await chrome.sidePanel.setOptions({

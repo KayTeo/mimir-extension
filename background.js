@@ -1,5 +1,15 @@
-import { supabase, restoreSession, setupAuthStateListener } from './supabaseClient.js';
 import { initalize_storage_variables } from './chrome_storage_variables.js';
+import { signInWithGoogle } from './auth.js';
+import { supabase, restoreSession, setupAuthStateListener } from './supabaseClient.js';
+
+// Create context menu items when the extension is installed
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "option1",
+    title: "Remember This!", // Initial state is "question"
+    contexts: ["selection"]  // Only show when text is selected
+  });
+});
 
 // Handle browser installation
 chrome.runtime.onInstalled.addListener(async () => {
@@ -99,6 +109,14 @@ export async function run_auto(info) {
     console.log("No text selected");
     return;
   }
+  if (!selectedDataset) {
+    chrome.runtime.sendMessage({
+      type: 'SHOW_STATUS',
+      message: 'Please select a dataset first',
+      statusType: 'error'
+    });
+    return;
+  }
 
   try {
     var result = await chrome.storage.local.get(["system_prompt"]);
@@ -110,8 +128,6 @@ export async function run_auto(info) {
        },
     })
     console.log(data);
-    //TODO: Parse response into Q/A
-    // Parse response into question and answer
     const questionMatch = data.match(/###QUESTION###(.*?)###ANSWER###/s);
     const answerMatch = data.match(/###ANSWER###(.*?)$/s);
     
@@ -165,16 +181,6 @@ function updateContextMenuTitle() {
   const title = addition_state === "question" ? "Add question to dataset" : "Add answer to dataset";
   chrome.contextMenus.update("option1", { title });
 }
-
-// Create context menu items when the extension is installed
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "option1",
-    title: "Remember This!", // Initial state is "question"
-    contexts: ["selection"]  // Only show when text is selected
-  });
-});
-
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {

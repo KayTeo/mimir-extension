@@ -144,3 +144,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
 });
+
+// Handle status messages from other parts of the extension
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'SHOW_STATUS') {
+    showStatus(request.message, request.statusType);
+  }
+});
