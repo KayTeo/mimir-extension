@@ -258,6 +258,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === 'UPDATE_DATA_POINT') {
     update_to_dataset(request.question, request.answer, request.dataset);
     return true;
+  } else if (request.type === 'ADD_DATA_POINT') {
+    add_to_dataset(request.question, request.answer, request.dataset);
+    return true;
   }
 });
 

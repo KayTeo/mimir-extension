@@ -8,6 +8,7 @@ const statusElement = document.getElementById('status');
 const questionText = document.getElementById('questionText');
 const answerText = document.getElementById('answerText');
 const updateQuestionsBtn = document.getElementById('updateQuestions');
+const addQuestionsBtn = document.getElementById('addQuestions');
 
 // Show status message
 function showStatus(message, type = 'success') {
@@ -121,6 +122,22 @@ updateQuestionsBtn.addEventListener('click', async () => {
   } catch (error) {
     console.error('Error updating data point:', error);
     showStatus('Error updating data point', 'error');
+  } 
+});
+
+// Add questions manually
+addQuestionsBtn.addEventListener('click', async () => {
+  try {
+    chrome.runtime.sendMessage({
+      type: 'ADD_DATA_POINT',
+      question: questionText.value,
+      answer: answerText.value,
+      dataset: datasetSelect.value
+    });
+    showStatus('Data point added'); 
+  } catch (error) {
+    console.error('Error adding data point:', error);
+    showStatus('Error adding data point', 'error');
   } 
 });
 
