@@ -140,7 +140,6 @@ googleSignInBtn.addEventListener('click', async (e) => {
     const window = await chrome.windows.getCurrent();
 
     showLoggedInState(result.data.user);
-    
 
     //TODO: Make side panel open on login
     await chrome.sidePanel.setOptions({

@@ -17,7 +17,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   setupAuthStateListener();
 });
 
-
 let selectedDataset = null;
 chrome.storage.local.get(['selectedDataset'], async (result) => {
   // Restore session
@@ -260,6 +259,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.type === 'ADD_DATA_POINT') {
     add_to_dataset(request.question, request.answer, request.dataset);
+    return true;
+  } else if (request.type === 'REAUTH_REQUIRED') {
+    // Handle re-authentication requirement
+    console.log('Re-authentication required, clearing session data');
+    chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
+    selectedDataset = null;
+    // You could also open the popup to prompt for re-authentication
+    chrome.action.openPopup();
     return true;
   }
 });

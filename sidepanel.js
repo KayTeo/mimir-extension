@@ -24,18 +24,23 @@ async function loadUserData() {
   try {
     // First try to get from storage
     const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
-    
-    if (supabaseUser) {
+    console.log("SupabaseUser: ", supabaseUser);
+  
+    // Careful with this check
+    if (supabaseUser.email) {
       userEmailElement.textContent = supabaseUser.email;
+      console.log("Returning supabaseUser", supabaseUser);
       return supabaseUser;
     }
-
+    console.log("No supabaseUser in storage");
     // If not in storage, try to get from Supabase
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
-    
+    console.log("Error after supabase.auth.getUser: ", error);  
+
     if (user) {
       userEmailElement.textContent = user.email;
+      console.log("Returning user", user);
       return user;
     }
 
@@ -144,13 +149,18 @@ addQuestionsBtn.addEventListener('click', async () => {
 // Initialize
 async function initialize() {
   // First restore the session
-  await restoreSession();
+  const sessionRestored = await restoreSession();
   
+  // Load user data
   const user = await loadUserData();
-  console.log("User: ", user);
-  console.log("User ID: ", user.id);  
-  if (user) {
+  console.log("User returned: ", user);
+  
+  if (user && user.id) {
+    console.log("User ID: ", user.id);
     await loadDatasets(user.id);
+  } else {
+    console.log("No user found or user has no ID");
+    showStatus('Please sign in to continue', 'error');
   }
 }
 
@@ -173,5 +183,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'SHOW_STATUS') {
     showStatus(request.message, request.statusType);
+  } else if (request.type === 'REAUTH_REQUIRED') {
+    // Handle re-authentication requirement
+    console.log('Re-authentication required in sidepanel');
+    showStatus('Please sign in again to continue', 'error');
+    // Clear the UI
+    userEmailElement.textContent = '';
+    datasetSelect.innerHTML = '';
   }
 });
