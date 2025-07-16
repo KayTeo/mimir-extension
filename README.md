@@ -12,7 +12,7 @@ A minimal Chrome extension starter project.
 
 ## Project Structure
 - `manifest.json`: Chrome extension manifest file.
-- `popup.html`: The popup UI.
+- `background/popup.html`: The popup UI.
 - `icons/`: Placeholder icons (replace with your own images).
 
 Feel free to modify and expand this extension! 

@@ -1,4 +1,4 @@
-import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser, signInWithGoogle } from './auth.js';
+import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser } from '../background/auth.js';
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -141,9 +141,8 @@ googleSignInBtn.addEventListener('click', async (e) => {
 
     showLoggedInState(result.data.user);
 
-    //TODO: Make side panel open on login
     await chrome.sidePanel.setOptions({
-      path: 'sidepanel.html',
+      path: 'ui/sidepanel.html',
       enabled: true
     });
     
@@ -170,7 +169,7 @@ openSidePanelBtn.addEventListener('click', async () => {
       if (isOpening) {
         // Set the options first
         await chrome.sidePanel.setOptions({
-          path: 'sidepanel.html',
+          path: 'ui/sidepanel.html',
           enabled: true
         });
         

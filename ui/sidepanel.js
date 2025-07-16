@@ -1,4 +1,4 @@
-import { supabase, restoreSession } from './supabaseClient.js';
+import { supabase, restoreSession } from '../background/supabaseClient.js';
 
 // DOM Elements
 const userEmailElement = document.getElementById('userEmail');
@@ -9,6 +9,24 @@ const questionText = document.getElementById('questionText');
 const answerText = document.getElementById('answerText');
 const updateQuestionsBtn = document.getElementById('updateQuestions');
 const addQuestionsBtn = document.getElementById('addQuestions');
+
+// Initialize
+async function initialize() {
+  // First restore the session
+  const sessionRestored = await restoreSession();
+  
+  // Load user data
+  const user = await loadUserData();
+  console.log("User returned: ", user);
+  
+  if (user && user.id) {
+    console.log("User ID: ", user.id);
+    await loadDatasets(user.id);
+  } else {
+    console.log("No user found or user has no ID");
+    showStatus('Please sign in to continue', 'error');
+  }
+}
 
 // Show status message
 function showStatus(message, type = 'success') {
@@ -145,24 +163,6 @@ addQuestionsBtn.addEventListener('click', async () => {
     showStatus('Error adding data point', 'error');
   } 
 });
-
-// Initialize
-async function initialize() {
-  // First restore the session
-  const sessionRestored = await restoreSession();
-  
-  // Load user data
-  const user = await loadUserData();
-  console.log("User returned: ", user);
-  
-  if (user && user.id) {
-    console.log("User ID: ", user.id);
-    await loadDatasets(user.id);
-  } else {
-    console.log("No user found or user has no ID");
-    showStatus('Please sign in to continue', 'error');
-  }
-}
 
 // Start initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', initialize); 

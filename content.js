@@ -1,1 +1,0 @@
-// Placeholder for future possible content.js scripts

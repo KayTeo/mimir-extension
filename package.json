@@ -2,7 +2,7 @@
   "name": "mimir-extension",
   "version": "1.0.0",
   "description": "A Chrome extension with Supabase authentication",
-  "main": "popup.js",
+  "main": "ui/popup.js",
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --config webpack.config.js --watch",

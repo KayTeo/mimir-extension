@@ -5,7 +5,7 @@
   "description": "A minimal Chrome extension starter.",
   "key": "jiimggnjbdbeehkcnifcpahjbjeimjma",
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "ui/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -21,12 +21,6 @@
     "commands",
     "sidePanel",
     "activeTab"
-  ],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
   ],
   "commands": {
     "action1": {
@@ -45,10 +39,10 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background/background.js"
   },
   "side_panel": {
-    "default_path": "sidepanel.html"
+    "default_path": "ui/sidepanel.html"
   },
   "oauth2": {
     "client_id": "456411952592-u5ia1651j66acah5hu78ckvrgv22k0t1.apps.googleusercontent.com",

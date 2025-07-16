@@ -53,7 +53,6 @@ async function add_to_dataset(selected_question, selected_label, selected_datase
     .select()
     .single();
 
-
   if (dataPointError) throw dataPointError;
   current_data_point_id = dataPoint.id;
 
@@ -246,28 +245,31 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
-
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'GOOGLE_SIGN_IN') {
-    handleGoogleSignIn()
-      .then(result => sendResponse(result))
-      .catch(error => sendResponse({ data: null, error }));
-    return true; // Required for async sendResponse
-  } else if (request.type === 'UPDATE_DATA_POINT') {
-    update_to_dataset(request.question, request.answer, request.dataset);
-    return true;
-  } else if (request.type === 'ADD_DATA_POINT') {
-    add_to_dataset(request.question, request.answer, request.dataset);
-    return true;
-  } else if (request.type === 'REAUTH_REQUIRED') {
-    // Handle re-authentication requirement
-    console.log('Re-authentication required, clearing session data');
-    chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
-    selectedDataset = null;
-    // You could also open the popup to prompt for re-authentication
-    chrome.action.openPopup();
-    return true;
+  switch (request.type) {
+    case 'GOOGLE_SIGN_IN':
+      handleGoogleSignIn()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ data: null, error }));
+      return true; // Required for async sendResponse
+      
+    case 'UPDATE_DATA_POINT':
+      update_to_dataset(request.question, request.answer, request.dataset);
+      return true;
+      
+    case 'ADD_DATA_POINT':
+      add_to_dataset(request.question, request.answer, request.dataset);
+      return true;
+      
+    case 'REAUTH_REQUIRED':
+      // Handle re-authentication requirement
+      console.log('Re-authentication required, clearing session data');
+      chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
+      selectedDataset = null;
+      // You could also open the popup to prompt for re-authentication
+      chrome.action.openPopup();
+      return true;
   }
 });
 
