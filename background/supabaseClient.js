@@ -23,6 +23,10 @@ export async function restoreSession() {
   try {
     const result = await sessionRestorePromise;
     return result;
+  } catch (error) {
+    // Gracefully handle any errors during session restoration
+    console.log('Session restoration failed (user may not be logged in):', error.message);
+    return false;
   } finally {
     isRestoringSession = false;
     sessionRestorePromise = null;
@@ -31,23 +35,28 @@ export async function restoreSession() {
 
 // Internal session restore function
 async function _restoreSessionInternal() {
-  const { supabaseSession } = await chrome.storage.local.get(['supabaseSession']);
-  if (supabaseSession) {
-    const { error } = await supabase.auth.setSession(supabaseSession);
-    if (error) {
-      console.error('Error restoring session:', error);
-      if (error.message.includes('Invalid Refresh Token')) {
-        console.log('Refresh token invalid - requiring reauthentication');
-        await supabase.auth.signOut();
-        await chrome.storage.local.remove('supabaseSession');
-        chrome.runtime.sendMessage({ type: 'REAUTH_REQUIRED' });
-        return false;
+  try {
+    const { supabaseSession } = await chrome.storage.local.get(['supabaseSession']);
+    if (supabaseSession) {
+      // Try to set the session
+      const { error } = await supabase.auth.setSession(supabaseSession);
+      if (error) {
+        if (error.message.includes('Invalid Refresh Token')) {
+          console.log('Refresh token invalid - requiring reauthentication');
+          await supabase.auth.signOut();
+          await chrome.storage.local.remove('supabaseSession');
+          chrome.runtime.sendMessage({ type: 'REAUTH_REQUIRED' });
+          return false;
+        }
+        throw error;
       }
-      return false;
+      return true;
     }
-    return true;
+    return false;
+  } catch (error) {
+    console.error('Error restoring session:', error);
+    return false;
   }
-  return false;
 }
 
 // Helper function to handle auth state changes

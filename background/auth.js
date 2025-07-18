@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient.js';
-
 export { supabase };
 
 export async function signInWithEmail(email, password) {
@@ -48,6 +47,8 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
+  console.log("User in getCurrentUser: ", user);
+  console.log("Error in getCurrentUser: ", error);
   if (user) return { user, error: null };
   return { user: null, error };
 }

@@ -1,52 +1,199 @@
 import { initalize_storage_variables } from './chrome_storage_variables.js';
-import { signInWithGoogle } from './auth.js';
+import { getCurrentUser, signInWithGoogle } from './auth.js';
 import { supabase, restoreSession, setupAuthStateListener } from './supabaseClient.js';
 
-// Create context menu items when the extension is installed
-chrome.runtime.onInstalled.addListener(() => {
+await restoreSession();
+
+// Main body of APIs provided by background.js
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Inefficient to restore session every time? But gives guarantees that session is valid.
+  (async () => {
+    try {
+     await restoreSession();
+    }
+    catch (error) {
+      // Only send error response if it's a critical error, not just missing session
+      console.log('Session restoration failed:', error.message);
+      // Don't send error response for missing session - let the request continue
+    }
+  })();
+
+  switch (request.type) {
+    case 'GOOGLE_SIGN_IN':
+      handleGoogleSignIn()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ data: null, error }));
+      return true; // Required for async sendResponse
+      
+    case 'UPDATE_DATA_POINT':
+      update_to_dataset(request.question, request.answer, request.dataset);
+      return true;
+      
+    case 'ADD_DATA_POINT':
+      (async () => { 
+        try {
+          const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+          const { data: newDataset, error: createError } = await supabase
+            .from('datasets')
+            .insert({
+              name: request.datasetName,
+              user_id: supabaseUser.id
+            })
+            .select('id, name')
+            .single();
+          if (createError) throw createError;
+          sendResponse({ data: newDataset, error: null });
+        }
+        catch (error) {
+          sendResponse({ data: null, error });
+        }
+      })();
+      return true;
+      
+    case 'REAUTH_REQUIRED':
+      // Handle re-authentication requirement
+      console.log('Re-authentication required, clearing session data');
+      chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
+      // You could also open the popup to prompt for re-authentication
+      chrome.action.openPopup();
+      return true;
+
+    case 'SELECT_DATASET':
+      // This refers to the dataset ID, not the dataset name
+      chrome.storage.local.set({ selectedDataset: request.dataset });
+      return true;
+
+    case 'GET_DATASET_NAMES_LIST':
+      (async () => {
+        try {
+          const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+          const { data: datasets, error: datasetsError } = await supabase
+            .from('datasets')
+            .select('id, name')
+            .eq('user_id', supabaseUser.id);
+          if (datasetsError) throw datasetsError;
+          sendResponse({ data: datasets, error: null });
+        } catch (error) {
+          console.error('Error getting dataset names list:', error);
+          sendResponse({ data: null, error: error });
+        }
+      })();
+      return true;
+
+    case 'CREATE_DATASET':
+      (async () => {
+        try {
+          const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+          const { data: newDataset, error: createError } = await supabase
+            .from('datasets')
+            .insert({
+              name: request.datasetName,
+              user_id: supabaseUser.id
+            })
+            .select('id, name')
+            .single();
+          if (createError) throw createError;
+          sendResponse({ data: newDataset, error: null });
+        } catch (error) {
+          sendResponse({ data: null, error });
+        }
+      })();
+      return true;
+    case 'SIGN_IN_WITH_EMAIL':
+      (async () => {
+        try {
+          const { signInWithEmail } = await import('./auth.js');
+          const { data, error } = await signInWithEmail(request.email, request.password);
+          sendResponse({ data, error });
+        } catch (error) {
+          sendResponse({ data: null, error });
+        }
+      })();
+      return true;
+    case 'SIGN_UP_WITH_EMAIL':
+      (async () => {
+        try {
+          const { signUpWithEmail } = await import('./auth.js');
+          const { data, error } = await signUpWithEmail(request.email, request.password);
+          sendResponse({ data, error });
+        } catch (error) {
+          sendResponse({ data: null, error });
+        }
+      })();
+      return true;
+    case 'SIGN_OUT':
+      (async () => {
+        try {
+          const { signOut } = await import('./auth.js');
+          const { error } = await signOut();
+          sendResponse({ error });
+        } catch (error) {
+          sendResponse({ error });
+        }
+      })();
+      return true;
+    case 'GET_CURRENT_USER':
+      (async () => {
+        try {
+          const { user, error } = await getCurrentUser();
+          sendResponse({ user, error });
+        } catch (error) {
+          sendResponse({ user: null, error });
+        }
+      })();
+      return true;
+  }
+});
+
+// Create context menu items and handle browser installation when the extension is installed
+chrome.runtime.onInstalled.addListener(async () => {
   chrome.contextMenus.create({
     id: "option1",
     title: "Remember This!", // Initial state is "question"
     contexts: ["selection"]  // Only show when text is selected
   });
-});
-
-// Handle browser installation
-chrome.runtime.onInstalled.addListener(async () => {
   await initalize_storage_variables();
   setupAuthStateListener();
 });
 
-let selectedDataset = null;
-chrome.storage.local.get(['selectedDataset'], async (result) => {
-  // Restore session
-  await restoreSession();
-  
-  // Restore selected dataset
-  if (result.selectedDataset) {
-    selectedDataset = result.selectedDataset;
-    console.log('Restored selected dataset:', selectedDataset);
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  switch (info.menuItemId) {
+    case "option1":
+      console.log("Context menu clicked");
+      const result = await chrome.storage.local.get(['mode']);
+      const mode = result.mode;
+      console.log("Mode: ", mode);
+      if (mode === "manual") await run_manual(info);
+      if (mode === "auto") await run_auto(info);
+      break;
+  }
+});
+
+// Handle keyboard commands
+chrome.commands.onCommand.addListener((command) => {
+  switch (command) {
+    case "action1":
+      (async () => {
+        try {
+          await run_auto(info);
+        }
+        catch (error) {
+          console.error("Error in run_auto:", error);
+        }
+      })();
+      break;
   }
 });
 
 var current_data_point_id = null;
 async function add_to_dataset(selected_question, selected_label, selected_dataset) {
-  // Get user from storage first
-  const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
-  if (!supabaseUser) {
-    console.log("No user found in storage, trying to get from Supabase");
-    const { user, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-    console.log("user is", user);
-  } else {
-    console.log("user from storage is", supabaseUser);
-  }
   
   // Create the data point
   const { data: dataPoint, error: dataPointError } = await supabase
     .from('data_points')
     .insert({
-      user_id: supabaseUser?.id || user.id,
+      user_id: supabase?.id,
       content: selected_question.trim(),
       label: selected_label.trim()
     })
@@ -60,7 +207,7 @@ async function add_to_dataset(selected_question, selected_label, selected_datase
   const { error: associationError } = await supabase
     .from('dataset_data_points')
     .insert({
-      dataset_id: selectedDataset,
+      dataset_id: chrome.storage.local.get(['selectedDataset']),
       data_point_id: dataPoint.id
     });
 
@@ -94,7 +241,7 @@ async function update_to_dataset(selected_question, selected_label, selected_dat
   const { error: associationError } = await supabase
     .from('dataset_data_points')
     .insert({
-      dataset_id: selectedDataset,
+      dataset_id: chrome.storage.local.get(['selectedDataset']),
       data_point_id: dataPoint.id
     });
 
@@ -121,18 +268,18 @@ export async function run_manual(info) {
       return;
     }
 
-    if (!selectedDataset) {
+    if (!chrome.storage.local.get(['selectedDataset'])) {
       console.log("No dataset selected");
       return;
     }
 
     addition_state = "question"
     updateContextMenuTitle(); // Update menu title after state change
-    var status = await add_to_dataset(question, label, selectedDataset)
+    var status = await add_to_dataset(question, label, chrome.storage.local.get(['selectedDataset']))
     console.log("Status:", status);
   }
 
-  console.log("Using dataset:", selectedDataset);
+  console.log("Using dataset:", chrome.storage.local.get(['selectedDataset']));
   console.log("Selected question:", question);
 }
 
@@ -143,7 +290,7 @@ export async function run_auto(info) {
     console.log("No text selected");
     return;
   }
-  if (!selectedDataset) {
+  if (!chrome.storage.local.get(['selectedDataset'])) {
     chrome.runtime.sendMessage({
       type: 'SHOW_STATUS',
       message: 'Please select a dataset first',
@@ -173,9 +320,8 @@ export async function run_auto(info) {
     const question = questionMatch[1].trim();
     const answer = answerMatch[1].trim();
 
-    //const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
-    console.log("Selected dataset:", selectedDataset);
-    var status = await add_to_dataset(question, answer, selectedDataset)
+    console.log("Selected dataset:", chrome.storage.local.get(['selectedDataset']));
+    var status = await add_to_dataset(question, answer, chrome.storage.local.get(['selectedDataset']))
     console.log("Status:", status);
 
 
@@ -202,7 +348,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('User signed out');
     // Clear the session from Chrome storage
     await chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
-    selectedDataset = null;
   }
 });
 
@@ -215,77 +360,7 @@ function updateContextMenuTitle() {
   const title = addition_state === "question" ? "Add question to dataset" : "Add answer to dataset";
   chrome.contextMenus.update("option1", { title });
 }
-
-// Handle context menu clicks
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  switch (info.menuItemId) {
-    case "option1":
-      console.log("Context menu clicked");
-      const result = await chrome.storage.local.get(['mode']);
-      const mode = result.mode;
-      console.log("Mode: ", mode);
-      if (mode === "manual") await run_manual(info);
-      if (mode === "auto") await run_auto(info);
-      break;
-  }
-});
-
-// Handle keyboard commands
-// TODO: Support hotkey actions
-chrome.commands.onCommand.addListener((command) => {
-  switch (command) {
-    case "action1":
-      console.log("Action 1 triggered by keyboard shortcut");
-      // Add your action1 logic here
-      break;
-    case "action2":
-      console.log("Action 2 triggered by keyboard shortcut");
-      // Add your action2 logic here
-      break;
-  }
-});
-
-// Handle messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  switch (request.type) {
-    case 'GOOGLE_SIGN_IN':
-      handleGoogleSignIn()
-        .then(result => sendResponse(result))
-        .catch(error => sendResponse({ data: null, error }));
-      return true; // Required for async sendResponse
-      
-    case 'UPDATE_DATA_POINT':
-      update_to_dataset(request.question, request.answer, request.dataset);
-      return true;
-      
-    case 'ADD_DATA_POINT':
-      add_to_dataset(request.question, request.answer, request.dataset);
-      return true;
-      
-    case 'REAUTH_REQUIRED':
-      // Handle re-authentication requirement
-      console.log('Re-authentication required, clearing session data');
-      chrome.storage.local.remove(['supabaseSession', 'supabaseUser', 'selectedDataset']);
-      selectedDataset = null;
-      // You could also open the popup to prompt for re-authentication
-      chrome.action.openPopup();
-      return true;
-  }
-});
-
 async function handleGoogleSignIn() {
   const result = await signInWithGoogle();
-  if (result.data && !result.error) {
-    // Reopen the popup after successful authentication
-    chrome.action.openPopup();
-  }
   return result;
 }
-
-// Listen for changes to selectedDataset in storage
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local' && changes.selectedDataset) {
-    selectedDataset = changes.selectedDataset.newValue;
-    console.log("Selected dataset updated from storage:", selectedDataset);
-  }
-});

@@ -1,5 +1,3 @@
-import { supabase, restoreSession } from '../background/supabaseClient.js';
-
 // DOM Elements
 const userEmailElement = document.getElementById('userEmail');
 const datasetSelect = document.getElementById('datasetSelect');
@@ -12,21 +10,16 @@ const addQuestionsBtn = document.getElementById('addQuestions');
 
 // Initialize
 async function initialize() {
-  // First restore the session
-  const sessionRestored = await restoreSession();
-  
-  // Load user data
-  const user = await loadUserData();
-  console.log("User returned: ", user);
-  
-  if (user && user.id) {
-    console.log("User ID: ", user.id);
-    await loadDatasets(user.id);
-  } else {
-    console.log("No user found or user has no ID");
-    showStatus('Please sign in to continue', 'error');
-  }
+  // Load datasets for the current user
+  await loadDatasets();
 }
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.selectedDataset) {
+    // Update the selected value instead of overwriting innerHTML
+    datasetSelect.value = changes.selectedDataset.newValue;
+  }
+});
 
 // Show status message
 function showStatus(message, type = 'success') {
@@ -37,51 +30,9 @@ function showStatus(message, type = 'success') {
   }, 3000);
 }
 
-// Load user data
-async function loadUserData() {
-  try {
-    // First try to get from storage
-    const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
-    console.log("SupabaseUser: ", supabaseUser);
-  
-    // Careful with this check
-    if (supabaseUser.email) {
-      userEmailElement.textContent = supabaseUser.email;
-      console.log("Returning supabaseUser", supabaseUser);
-      return supabaseUser;
-    }
-    console.log("No supabaseUser in storage");
-    // If not in storage, try to get from Supabase
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    console.log("Error after supabase.auth.getUser: ", error);  
-
-    if (user) {
-      userEmailElement.textContent = user.email;
-      console.log("Returning user", user);
-      return user;
-    }
-
-    throw new Error('No user found');
-  } catch (error) {
-    console.error('Error loading user:', error);
-    showStatus('Error loading user data', 'error');
-    return null;
-  }
-}
-
 // Load datasets for the user
-async function loadDatasets(userId) {
+async function loadDatasets() {
   try {
-    const { data: datasets, error } = await supabase
-      .from('datasets')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    console.log(datasets)
-
-    if (error) throw error;
-
     // Clear existing options
     datasetSelect.innerHTML = '';
 
@@ -91,19 +42,40 @@ async function loadDatasets(userId) {
     defaultOption.textContent = '-- Select a dataset --';
     datasetSelect.appendChild(defaultOption);
 
-    // Add dataset options
-    datasets.forEach(dataset => {
-      const option = document.createElement('option');
-      option.value = dataset.id;
-      option.textContent = dataset.name;
-      datasetSelect.appendChild(option);
+    // Get datasets from background script
+    chrome.runtime.sendMessage({
+      type: 'GET_DATASET_NAMES_LIST'
+    }, (response) => {
+      if (response.error) {
+        console.error('Error getting datasets:', response.error);
+        showStatus('Error loading datasets', 'error');
+        return;
+      }
+
+      if (response.data && response.data.length > 0) {
+        // Add dataset options
+        response.data.forEach(dataset => {
+          const option = document.createElement('option');
+          option.value = dataset.id;
+          option.textContent = dataset.name;
+          datasetSelect.appendChild(option);
+        });
+      }
+
+      // Add "Create New Dataset" option
+      const createNewOption = document.createElement('option');
+      createNewOption.value = 'CREATE_NEW';
+      createNewOption.textContent = '+ Create New Dataset';
+      datasetSelect.appendChild(createNewOption);
+
+      // Get the last selected dataset from storage
+      chrome.storage.local.get(['selectedDataset'], (result) => {
+        if (result.selectedDataset && result.selectedDataset !== 'CREATE_NEW') {
+          datasetSelect.value = result.selectedDataset;
+        }
+      });
     });
 
-    // Get the last selected dataset from storage
-    const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
-    if (selectedDataset) {
-      datasetSelect.value = selectedDataset;
-    }
   } catch (error) {
     console.error('Error loading datasets:', error);
     showStatus('Error loading datasets', 'error');
@@ -113,6 +85,48 @@ async function loadDatasets(userId) {
 // Handle dataset selection
 datasetSelect.addEventListener('change', async () => {
   const datasetId = datasetSelect.value;
+  
+  // Handle "Create New Dataset" option
+  if (datasetId === 'CREATE_NEW') {
+    const datasetName = prompt('Enter the name for your new dataset:');
+    if (datasetName && datasetName.trim()) {
+      try {
+        // Create new dataset via background script
+        chrome.runtime.sendMessage({
+          type: 'CREATE_DATASET',
+          datasetName: datasetName.trim()
+        }, (response) => {
+          if (response.error) {
+            console.error('Error creating dataset:', response.error);
+            showStatus('Error creating dataset', 'error');
+            // Reset to default option
+            datasetSelect.value = '';
+          } else {
+            showStatus('Dataset created successfully!');
+            // Set the new dataset as selected
+            if (response.data && response.data.id) {
+              chrome.storage.local.set({ selectedDataset: response.data.id }, () => {
+                // Reload datasets and select the new one after reload
+                loadDatasets().then(() => {
+                  datasetSelect.value = response.data.id;
+                });
+              });
+            } else {
+              loadDatasets();
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error creating dataset:', error);
+        showStatus('Error creating dataset', 'error');
+        datasetSelect.value = '';
+      }
+    } else {
+      // User cancelled or entered empty name, reset to default
+      datasetSelect.value = '';
+    }
+    return;
+  }
   
   try {
     // Store the selection in Chrome storage
@@ -145,7 +159,7 @@ updateQuestionsBtn.addEventListener('click', async () => {
   } catch (error) {
     console.error('Error updating data point:', error);
     showStatus('Error updating data point', 'error');
-  } 
+  }
 });
 
 // Add questions manually
@@ -168,27 +182,28 @@ addQuestionsBtn.addEventListener('click', async () => {
 document.addEventListener('DOMContentLoaded', initialize); 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'LOAD_QA') {
-    console.log("Loading QA");
-    if (request.question && request.answer) {
-      questionText.value = request.question;
-      answerText.value = request.answer;
-    } else {
-      console.error('Question or answer input elements not found');
-    }
-  }
-});
+  switch (request.type) {
+    case 'LOAD_QA':
+      console.log("Loading QA");
+      if (request.question && request.answer) {
+        questionText.value = request.question;
+        answerText.value = request.answer;
+      } else {
+        console.error('Question or answer input elements not found');
+      }
+      break;
 
-// Handle status messages from other parts of the extension
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'SHOW_STATUS') {
-    showStatus(request.message, request.statusType);
-  } else if (request.type === 'REAUTH_REQUIRED') {
-    // Handle re-authentication requirement
-    console.log('Re-authentication required in sidepanel');
-    showStatus('Please sign in again to continue', 'error');
-    // Clear the UI
-    userEmailElement.textContent = '';
-    datasetSelect.innerHTML = '';
+    case 'SHOW_STATUS':
+      showStatus(request.message, request.statusType);
+      break;
+
+    case 'REAUTH_REQUIRED':
+      // Handle re-authentication requirement
+      console.log('Re-authentication required in sidepanel');
+      showStatus('Please sign in again to continue', 'error');
+      // Clear the UI
+      userEmailElement.textContent = '';
+      datasetSelect.innerHTML = '';
+      break;
   }
 });

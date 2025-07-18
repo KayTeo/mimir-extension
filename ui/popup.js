@@ -1,4 +1,4 @@
-import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser } from '../background/auth.js';
+// Auth handled via background.js message passing
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
@@ -77,7 +77,9 @@ loginForm.addEventListener('submit', async (e) => {
   }
 
   try {
-    const { data, error } = await signInWithEmail(email, password);
+    const { data, error } = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'SIGN_IN_WITH_EMAIL', email, password }, resolve);
+    });
     if (error) throw error;
     showLoggedInState(data.user);
   } catch (error) {
@@ -98,7 +100,9 @@ signupForm.addEventListener('submit', async (e) => {
   }
 
   try {
-    const { data, error } = await signUpWithEmail(email, password);
+    const { data, error } = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'SIGN_UP_WITH_EMAIL', email, password }, resolve);
+    });
     if (error) throw error;
     showSuccess('Sign up successful! Please check your email for verification.');
     showLoginForm();
@@ -110,7 +114,9 @@ signupForm.addEventListener('submit', async (e) => {
 document.getElementById('logoutBtn').addEventListener('click', async (e) => {
   e.preventDefault();
   try {
-    const { error } = await signOut();
+    const { error } = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'SIGN_OUT' }, resolve);
+    });
     if (error) throw error;
     showLoginForm();
   } catch (error) {
@@ -193,12 +199,11 @@ openSidePanelBtn.addEventListener('click', async () => {
 
 // Update the checkAuthState function to also check panel state
 async function checkAuthState() {
-  const { user, error } = await getCurrentUser();
-  // Also check chrome storage as a backup
-  const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
-  
-  if (user || supabaseUser) {
-    showLoggedInState(user || supabaseUser);
+  const { user, error } = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_USER' });
+
+  console.log("Error in checkAuthState: ", error);
+  if (user) {
+    showLoggedInState(user);
     
     // Check initial panel state
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -213,7 +218,6 @@ async function checkAuthState() {
     console.log("Auth state exception: ", error);
     showLoginForm();
   }
-
 }
 
 // Initialize

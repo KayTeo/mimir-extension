@@ -25,17 +25,10 @@
   "commands": {
     "action1": {
       "suggested_key": {
-        "default": "Ctrl+Shift+Y",
-        "mac": "Command+Shift+Y"
-      },
-      "description": "Trigger action 1"
-    },
-    "action2": {
-      "suggested_key": {
         "default": "Ctrl+Shift+X",
-        "mac": "Command+Shift+X"
+        "mac": "Command+Shift+S"
       },
-      "description": "Trigger action 2"
+      "description": "Create card"
     }
   },
   "background": {
