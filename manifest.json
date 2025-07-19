@@ -5,7 +5,6 @@
   "description": "A minimal Chrome extension starter.",
   "key": "jiimggnjbdbeehkcnifcpahjbjeimjma",
   "action": {
-    "default_popup": "ui/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -20,7 +19,8 @@
     "contextMenus",
     "commands",
     "sidePanel",
-    "activeTab"
+    "activeTab",
+    "alarms"
   ],
   "commands": {
     "action1": {

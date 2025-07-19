@@ -145,6 +145,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// Handle extension icon click to open side panel
+chrome.action.onClicked.addListener((tab) => {
+  // Open the side panel immediately in response to user gesture
+  chrome.sidePanel.open({ windowId: tab.windowId });
+});
+
 // Create context menu items and handle browser installation when the extension is installed
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.contextMenus.create({
@@ -152,6 +158,13 @@ chrome.runtime.onInstalled.addListener(async () => {
     title: "Remember This!", // Initial state is "question"
     contexts: ["selection"]  // Only show when text is selected
   });
+  
+  // Set up the side panel configuration
+  chrome.sidePanel.setOptions({
+    path: 'ui/sidepanel.html',
+    enabled: true
+  });
+  
   await initalize_storage_variables();
   setupAuthStateListener();
 });

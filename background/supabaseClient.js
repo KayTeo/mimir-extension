@@ -54,7 +54,6 @@ async function _restoreSessionInternal() {
     }
     return false;
   } catch (error) {
-    console.error('Error restoring session:', error);
     return false;
   }
 }
