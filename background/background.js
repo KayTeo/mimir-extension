@@ -5,6 +5,11 @@ import { supabase, restoreSession, setupAuthStateListener } from './supabaseClie
 await restoreSession();
 await initalize_storage_variables();
 
+chrome.contextMenus.remove("option1", () => {
+  if (chrome.runtime.lastError) {
+    console.log('Error removing context menu:', chrome.runtime.lastError);
+  }
+});
 
 chrome.contextMenus.create({
   id: "option1",
