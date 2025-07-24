@@ -40,17 +40,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'ADD_DATA_POINT':
       (async () => { 
         try {
-          const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
-          const { data: newDataset, error: createError } = await supabase
-            .from('datasets')
-            .insert({
-              name: request.datasetName,
-              user_id: supabaseUser.id
-            })
-            .select('id, name')
-            .single();
-          if (createError) throw createError;
-          sendResponse({ data: newDataset, error: null });
+          const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
+          if (!selectedDataset) throw new Error('No dataset selected');
+          await add_to_dataset(request.question, request.answer, selectedDataset);
+          sendResponse({ data: 'success', error: null });
         }
         catch (error) {
           sendResponse({ data: null, error });
@@ -202,12 +195,13 @@ chrome.commands.onCommand.addListener((command) => {
 
 var current_data_point_id = null;
 async function add_to_dataset(selected_question, selected_label, selected_dataset) {
-  
+  const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
+  // Ensure selected_dataset is a string (dataset ID)
   // Create the data point
   const { data: dataPoint, error: dataPointError } = await supabase
     .from('data_points')
     .insert({
-      user_id: supabase?.id,
+      user_id: supabaseUser?.id,
       content: selected_question.trim(),
       label: selected_label.trim()
     })
@@ -221,7 +215,7 @@ async function add_to_dataset(selected_question, selected_label, selected_datase
   const { error: associationError } = await supabase
     .from('dataset_data_points')
     .insert({
-      dataset_id: chrome.storage.local.get(['selectedDataset']),
+      dataset_id: selected_dataset, // Use the actual dataset ID
       data_point_id: dataPoint.id
     });
 
@@ -239,7 +233,6 @@ async function update_to_dataset(selected_question, selected_label, selected_dat
   } else {
     console.log("user from storage is", supabaseUser);
   }
-  
   // Create the data point
   const { data: dataPoint, error: dataPointError } = await supabase
     .from('data_points')
@@ -255,7 +248,7 @@ async function update_to_dataset(selected_question, selected_label, selected_dat
   const { error: associationError } = await supabase
     .from('dataset_data_points')
     .insert({
-      dataset_id: chrome.storage.local.get(['selectedDataset']),
+      dataset_id: selected_dataset, // Use the actual dataset ID
       data_point_id: dataPoint.id
     });
 
@@ -281,19 +274,18 @@ export async function run_manual(info) {
       console.log("No label text selected");
       return;
     }
-
-    if (!chrome.storage.local.get(['selectedDataset'])) {
+    const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
+    if (!selectedDataset) {
       console.log("No dataset selected");
       return;
     }
-
     addition_state = "question"
     updateContextMenuTitle(); // Update menu title after state change
-    var status = await add_to_dataset(question, label, chrome.storage.local.get(['selectedDataset']))
+    var status = await add_to_dataset(question, label, selectedDataset)
     console.log("Status:", status);
   }
-
-  console.log("Using dataset:", chrome.storage.local.get(['selectedDataset']));
+  const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
+  console.log("Using dataset:", selectedDataset);
   console.log("Selected question:", question);
 }
 
@@ -304,7 +296,8 @@ export async function run_auto(info) {
     console.log("No text selected");
     return;
   }
-  if (!chrome.storage.local.get(['selectedDataset'])) {
+  const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
+  if (!selectedDataset) {
     chrome.runtime.sendMessage({
       type: 'SHOW_STATUS',
       message: 'Please select a dataset first',
@@ -334,8 +327,8 @@ export async function run_auto(info) {
     const question = questionMatch[1].trim();
     const answer = answerMatch[1].trim();
 
-    console.log("Selected dataset:", chrome.storage.local.get(['selectedDataset']));
-    var status = await add_to_dataset(question, answer, chrome.storage.local.get(['selectedDataset']))
+    console.log("Selected dataset:", selectedDataset);
+    var status = await add_to_dataset(question, answer, selectedDataset)
     console.log("Status:", status);
 
 
