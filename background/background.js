@@ -4,6 +4,12 @@ import { supabase, restoreSession, setupAuthStateListener } from './supabaseClie
 
 await restoreSession();
 
+chrome.contextMenus.create({
+  id: "option1",
+  title: "Remember This!", // Initial state is "question"
+  contexts: ["selection"]  // Only show when text is selected
+});
+
 // Main body of APIs provided by background.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Inefficient to restore session every time? But gives guarantees that session is valid.
@@ -153,12 +159,12 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Create context menu items and handle browser installation when the extension is installed
 chrome.runtime.onInstalled.addListener(async () => {
+  console.log("Extension installed");
   chrome.contextMenus.create({
     id: "option1",
     title: "Remember This!", // Initial state is "question"
     contexts: ["selection"]  // Only show when text is selected
-  });
-  
+  }); 
   // Set up the side panel configuration
   chrome.sidePanel.setOptions({
     path: 'ui/sidepanel.html',
@@ -373,6 +379,7 @@ function updateContextMenuTitle() {
   const title = addition_state === "question" ? "Add question to dataset" : "Add answer to dataset";
   chrome.contextMenus.update("option1", { title });
 }
+
 async function handleGoogleSignIn() {
   const result = await signInWithGoogle();
   return result;
