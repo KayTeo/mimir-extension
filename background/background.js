@@ -159,12 +159,6 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Create context menu items and handle browser installation when the extension is installed
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log("Extension installed");
-  chrome.contextMenus.create({
-    id: "option1",
-    title: "Remember This!", // Initial state is "question"
-    contexts: ["selection"]  // Only show when text is selected
-  }); 
   // Set up the side panel configuration
   chrome.sidePanel.setOptions({
     path: 'ui/sidepanel.html',
