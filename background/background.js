@@ -3,6 +3,8 @@ import { getCurrentUser, signInWithGoogle } from './auth.js';
 import { supabase, restoreSession, setupAuthStateListener } from './supabaseClient.js';
 
 await restoreSession();
+await initalize_storage_variables();
+
 
 chrome.contextMenus.create({
   id: "option1",
@@ -165,7 +167,6 @@ chrome.runtime.onInstalled.addListener(async () => {
     enabled: true
   });
   
-  await initalize_storage_variables();
   setupAuthStateListener();
 });
 
