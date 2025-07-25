@@ -238,6 +238,11 @@ async function update_to_dataset(selected_question, selected_label, selected_dat
   } else {
     console.log("user from storage is", supabaseUser);
   }
+
+  if (!current_data_point_id) {
+    show_status("No data point selected, please add a question.");
+    return;
+  }
   // Create the data point
   const { data: dataPoint, error: dataPointError } = await supabase
     .from('data_points')
