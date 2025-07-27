@@ -5,6 +5,31 @@ import { supabase, restoreSession, setupAuthStateListener } from './supabaseClie
 await restoreSession();
 await initalize_storage_variables();
 
+// Keep-alive mechanism using Chrome alarms
+chrome.alarms.create('keepAlive', { delayInMinutes: 1, periodInMinutes: 1 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'keepAlive') {
+    console.log('Keep-alive ping - service worker is active');
+    // You can add any periodic tasks here if needed
+  }
+});
+
+// Persistent event listeners to keep service worker alive
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Extension started - service worker activated');
+});
+
+chrome.runtime.onSuspend.addListener(() => {
+  console.log('Extension suspending - service worker will be terminated');
+});
+
+// Keep service worker alive with periodic activity
+setInterval(() => {
+  console.log('Service worker heartbeat');
+}, 30000); // Every 30 seconds
+
+
 chrome.contextMenus.remove("option1", () => {
   if (chrome.runtime.lastError) {
     console.log('Error removing context menu:', chrome.runtime.lastError);
@@ -167,7 +192,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   
   setupAuthStateListener();
 });
-
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   switch (info.menuItemId) {
@@ -198,6 +222,14 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
+async function show_status(message, statusType) {
+  chrome.runtime.sendMessage({
+    type: 'SHOW_STATUS',
+    message: message,
+    statusType: statusType
+  });
+}
+
 var current_data_point_id = null;
 async function add_to_dataset(selected_question, selected_label, selected_dataset) {
   const { supabaseUser } = await chrome.storage.local.get(['supabaseUser']);
@@ -215,7 +247,7 @@ async function add_to_dataset(selected_question, selected_label, selected_datase
 
   if (dataPointError) throw dataPointError;
   current_data_point_id = dataPoint.id;
-
+  console.log("Data point created with id:", current_data_point_id);
   // Create the association
   const { error: associationError } = await supabase
     .from('dataset_data_points')
@@ -240,10 +272,11 @@ async function update_to_dataset(selected_question, selected_label, selected_dat
   }
 
   if (!current_data_point_id) {
-    show_status("No data point selected, please add a question.");
+    show_status("No data point selected, please add a question.", "error");
     return;
   }
-  // Create the data point
+
+  // Update the data point
   const { data: dataPoint, error: dataPointError } = await supabase
     .from('data_points')
     .update({
@@ -254,15 +287,7 @@ async function update_to_dataset(selected_question, selected_label, selected_dat
 
   if (dataPointError) throw dataPointError;
 
-  // Create the association
-  const { error: associationError } = await supabase
-    .from('dataset_data_points')
-    .insert({
-      dataset_id: selected_dataset, // Use the actual dataset ID
-      data_point_id: dataPoint.id
-    });
-
-  if (associationError) throw associationError;
+  show_status("Data point updated", "success");
 }
 
 var addition_state = "question" //Varies between content and label on alternate clicks
@@ -308,11 +333,7 @@ export async function run_auto(info) {
   }
   const { selectedDataset } = await chrome.storage.local.get(['selectedDataset']);
   if (!selectedDataset) {
-    chrome.runtime.sendMessage({
-      type: 'SHOW_STATUS',
-      message: 'Please select a dataset first',
-      statusType: 'error'
-    });
+    show_status("Please select a dataset first", "error");
     return;
   }
 

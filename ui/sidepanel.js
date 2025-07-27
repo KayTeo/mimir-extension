@@ -112,7 +112,7 @@ function showStatus(message, type = 'success') {
   statusElement.className = `status ${type}`;
   setTimeout(() => {
     statusElement.className = 'status';
-  }, 3000);
+  }, 5000);
 }
 
 // Helper function for reliable message sending with retry logic
